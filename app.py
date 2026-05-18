@@ -66,7 +66,19 @@ st.markdown(f"""
     padding: 0 !important;
     max-width: 100% !important;
   }}
-  #MainMenu, footer, header {{ visibility: hidden; }}
+  #MainMenu, footer {{ visibility: hidden; }}
+  /* Ocultar solo el branding de Streamlit dentro del header, pero mostrar el botón del sidebar */
+  header[data-testid="stHeader"] {{ background: transparent !important; }}
+  header[data-testid="stHeader"] a,
+  header[data-testid="stHeader"] img {{ visibility: hidden; }}
+  /* Botón para abrir/cerrar sidebar — siempre visible */
+  button[data-testid="collapsedControl"],
+  button[data-testid="baseButton-headerNoPadding"] {{
+    visibility: visible !important;
+    background: {GREEN_DARK} !important;
+    color: {WHITE} !important;
+    border-radius: 8px !important;
+  }}
   section[data-testid="stSidebar"] {{
     background: {GREEN_DARK};
     min-width: 280px !important;

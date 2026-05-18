@@ -23,26 +23,43 @@ SCRIPT_PATH = Path(__file__).parent / "buscar_consultorias.py"
 LOGO_PATH   = Path(__file__).parent / "logo_ceo.png"
 
 # ── Paleta CEO ─────────────────────────────────────────────────────────────────
-# Extraída directamente del sitio grupo-ceo.com
-GREEN_DARK   = "#1A3D2E"   # verde bosque oscuro — textos, cards, logo
-GREEN_MID    = "#3A7D58"   # verde medio — bordes, hover
-GREEN_ACCENT = "#4CAF82"   # verde acento — links, highlights, "Grupo CEO" text
-GREEN_LIGHT  = "#6DB86B"   # verde claro — logo interior, gradientes suaves
-BG_SAGE      = "#EEF6EE"   # sage muy claro — fondo de secciones
-BG_HERO_FROM = "#C8E8CA"   # gradiente hero inicio
-BG_HERO_TO   = "#88C5B0"   # gradiente hero fin
+GREEN_DARK   = "#1A3D2E"
+GREEN_MID    = "#3A7D58"
+GREEN_ACCENT = "#4CAF82"
+GREEN_LIGHT  = "#6DB86B"
+BG_SAGE      = "#EEF6EE"
+BG_HERO_FROM = "#C8E8CA"
+BG_HERO_TO   = "#88C5B0"
 WHITE        = "#FFFFFF"
 TEXT_DARK    = "#1A1A1A"
 TEXT_BODY    = "#3D3D3D"
 BORDER_LIGHT = "#D4EAD6"
 
 # Prioridades
-COLOR_ALTA   = {"bg": "#FFE5E5", "border": "#D32F2F", "badge": "🔴"}
-COLOR_MEDIA  = {"bg": "#FFF8E1", "border": "#F9A825", "badge": "🟡"}
-COLOR_BAJA   = {"bg": "#E8F5E9", "border": "#388E3C", "badge": "🟢"}
-PRIO_MAP     = {"Alta": COLOR_ALTA, "Media": COLOR_MEDIA, "Baja": COLOR_BAJA}
+COLOR_ALTA  = {"bg": "#FFE5E5", "border": "#D32F2F", "badge": "🔴"}
+COLOR_MEDIA = {"bg": "#FFF8E1", "border": "#F9A825", "badge": "🟡"}
+COLOR_BAJA  = {"bg": "#E8F5E9", "border": "#388E3C", "badge": "🟢"}
+PRIO_MAP    = {"Alta": COLOR_ALTA, "Media": COLOR_MEDIA, "Baja": COLOR_BAJA}
 
-# ── Logo en base64 ────────────────────────────────────────────────────────────
+# Estado de postulación → estilo del chip
+ESTADO_CHIPS = {
+    "Identificada": {"bg": "#F5F5F5", "color": "#616161"},
+    "En análisis":  {"bg": "#E3F2FD", "color": "#1565C0"},
+    "Postulada":    {"bg": "#FFF3E0", "color": "#E65100"},
+    "Ganada":       {"bg": "#E8F5E9", "color": "#2E7D32"},
+    "Descartada":   {"bg": "#FFEBEE", "color": "#B71C1C"},
+}
+ESTADOS_ORDEN = ["Identificada", "En análisis", "Postulada", "Ganada", "Descartada"]
+
+# Consultores fijos del equipo CEO
+CONSULTORES = [
+    "—",
+    "Federico Villareal",
+    "Ana García",
+    "Carlos López",
+]
+
+# ── Logo ──────────────────────────────────────────────────────────────────────
 
 def get_logo_b64() -> str:
     if LOGO_PATH.exists():
@@ -67,11 +84,9 @@ st.markdown(f"""
     max-width: 100% !important;
   }}
   #MainMenu, footer {{ visibility: hidden; }}
-  /* Ocultar solo el branding de Streamlit dentro del header, pero mostrar el botón del sidebar */
   header[data-testid="stHeader"] {{ background: transparent !important; }}
   header[data-testid="stHeader"] a,
   header[data-testid="stHeader"] img {{ visibility: hidden; }}
-  /* Botón para abrir/cerrar sidebar — siempre visible */
   button[data-testid="collapsedControl"],
   button[data-testid="baseButton-headerNoPadding"] {{
     visibility: visible !important;
@@ -79,6 +94,8 @@ st.markdown(f"""
     color: {WHITE} !important;
     border-radius: 8px !important;
   }}
+
+  /* ── Sidebar ── */
   section[data-testid="stSidebar"] {{
     background: {GREEN_DARK};
     min-width: 280px !important;
@@ -146,10 +163,7 @@ st.markdown(f"""
     pointer-events: none;
     line-height: 1;
   }}
-  .ceo-hero-logo img {{
-    height: 56px;
-    width: auto;
-  }}
+  .ceo-hero-logo img {{ height: 56px; width: auto; }}
   .ceo-hero-text h1 {{
     color: {GREEN_DARK} !important;
     font-size: 1.45rem !important;
@@ -163,6 +177,12 @@ st.markdown(f"""
     margin: 0;
     font-weight: 400;
   }}
+  .ceo-hero-dates {{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+  }}
   .ceo-hero-date {{
     background: {GREEN_DARK};
     color: {WHITE};
@@ -171,6 +191,28 @@ st.markdown(f"""
     font-size: 0.78rem;
     font-weight: 500;
     white-space: nowrap;
+  }}
+  .ceo-hero-csv-date {{
+    background: rgba(26,61,46,0.15);
+    color: {GREEN_DARK};
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid rgba(26,61,46,0.2);
+  }}
+
+  /* ── Banner de datos desactualizados ── */
+  .stale-banner {{
+    background: #FFF8E1;
+    border-left: 4px solid #F9A825;
+    color: #7B5000;
+    padding: 0.7rem 1.5rem;
+    font-size: 0.84rem;
+    font-weight: 500;
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
   }}
 
   /* ── Metrics bar ── */
@@ -194,6 +236,12 @@ st.markdown(f"""
     color: {GREEN_DARK};
     line-height: 1;
   }}
+  .metric-num-sm {{
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: {GREEN_DARK};
+    line-height: 1;
+  }}
   .metric-label {{
     font-size: 0.72rem;
     color: #777;
@@ -202,15 +250,12 @@ st.markdown(f"""
     margin-top: 2px;
   }}
 
-  /* ── Content area — fondo aplicado al main, sin div wrapper ── */
-  .main {{
-    background: {BG_SAGE} !important;
-  }}
+  /* ── Content area ── */
+  .main {{ background: {BG_SAGE} !important; }}
   .main .block-container {{
     padding: 0 0 2rem 0 !important;
     max-width: 100% !important;
   }}
-  /* Padding interno para las cards */
   .stMarkdown {{ padding: 0 !important; }}
 
   /* ── Opportunity card ── */
@@ -235,6 +280,14 @@ st.markdown(f"""
     color: {GREEN_DARK};
     margin-bottom: 0.5rem;
     line-height: 1.35;
+  }}
+  .opp-title-descartada {{
+    font-size: 0.97rem;
+    font-weight: 600;
+    color: #9E9E9E;
+    margin-bottom: 0.5rem;
+    line-height: 1.35;
+    text-decoration: line-through;
   }}
   .opp-meta {{
     display: flex;
@@ -263,18 +316,12 @@ st.markdown(f"""
     font-weight: 600;
     letter-spacing: 0.02em;
   }}
-  .chip-dark {{
-    background: {GREEN_DARK};
-    color: {WHITE};
-  }}
-  .chip-mid {{
-    background: {BG_SAGE};
-    color: {GREEN_DARK};
-    border: 1px solid {BORDER_LIGHT};
-  }}
-  .chip-alta {{ background: #FFE5E5; color: #B71C1C; }}
+  .chip-dark  {{ background: {GREEN_DARK}; color: {WHITE}; }}
+  .chip-mid   {{ background: {BG_SAGE}; color: {GREEN_DARK}; border: 1px solid {BORDER_LIGHT}; }}
+  .chip-alta  {{ background: #FFE5E5; color: #B71C1C; }}
   .chip-media {{ background: #FFF8E1; color: #E65100; }}
-  .chip-baja {{ background: #E8F5E9; color: #1B5E20; }}
+  .chip-baja  {{ background: #E8F5E9; color: #1B5E20; }}
+  .chip-monto {{ background: #E8F4FD; color: #0D47A1; border: 1px solid #BBDEFB; }}
   .opp-link a {{
     color: {GREEN_ACCENT};
     font-size: 0.78rem;
@@ -315,17 +362,14 @@ st.markdown(f"""
     padding: 0.6rem !important;
     margin-top: 0.5rem !important;
   }}
-  .stDownloadButton button:hover {{
-    background: {GREEN_MID} !important;
-  }}
+  .stDownloadButton button:hover {{ background: {GREEN_MID} !important; }}
 
   /* ── Padding contenido principal ── */
   div[data-testid="stVerticalBlock"] > div {{
     padding-left: 1.5rem !important;
     padding-right: 1.5rem !important;
   }}
-  /* Hero y metrics ocupan el ancho completo sin padding lateral */
-  .ceo-hero, .metrics-bar {{
+  .ceo-hero, .metrics-bar, .stale-banner {{
     margin-left: -1.5rem;
     margin-right: -1.5rem;
   }}
@@ -342,7 +386,9 @@ st.markdown(f"""
     .ceo-hero-logo img {{ height: 38px; }}
     .ceo-hero-text h1 {{ font-size: 1.1rem !important; }}
     .ceo-hero-text p {{ font-size: 0.78rem; }}
+    .ceo-hero-dates {{ align-items: flex-start; }}
     .ceo-hero-date {{ font-size: 0.7rem; padding: 0.3rem 0.75rem; }}
+    .ceo-hero-csv-date {{ font-size: 0.67rem; }}
     .metrics-bar {{
       padding: 0.6rem 0.8rem;
       flex-wrap: wrap;
@@ -354,6 +400,7 @@ st.markdown(f"""
       padding: 0.4rem 0.3rem;
     }}
     .metric-num {{ font-size: 1.4rem; }}
+    .metric-num-sm {{ font-size: 1.1rem; }}
     .metric-label {{ font-size: 0.65rem; }}
     .opp-card {{ padding: 0.8rem 0.9rem; border-radius: 10px; }}
     .opp-title {{ font-size: 0.9rem; }}
@@ -363,8 +410,11 @@ st.markdown(f"""
       padding-left: 0.8rem !important;
       padding-right: 0.8rem !important;
     }}
+    .stale-banner {{
+      margin-left: -0.8rem;
+      margin-right: -0.8rem;
+    }}
   }}
-
   @media (max-width: 480px) {{
     .ceo-hero-text h1 {{ font-size: 0.95rem !important; }}
     .metric-pill {{ flex: 1 1 48%; }}
@@ -372,9 +422,7 @@ st.markdown(f"""
   }}
 
   /* ── Hint mobile sidebar ── */
-  .mobile-hint {{
-    display: none;
-  }}
+  .mobile-hint {{ display: none; }}
   @media (max-width: 768px) {{
     .mobile-hint {{
       display: flex;
@@ -403,17 +451,58 @@ st.markdown(f"""
 
 # ── Datos ─────────────────────────────────────────────────────────────────────
 
+MESES_ES = {
+    1: "ene", 2: "feb", 3: "mar", 4: "abr", 5: "may", 6: "jun",
+    7: "jul", 8: "ago", 9: "sep", 10: "oct", 11: "nov", 12: "dic",
+}
+
+def fmt_date_es(dt: datetime) -> str:
+    return f"{dt.day} {MESES_ES[dt.month]} {dt.year}"
+
+def csv_mtime() -> datetime | None:
+    if CSV_PATH.exists():
+        return datetime.fromtimestamp(CSV_PATH.stat().st_mtime)
+    return None
+
 @st.cache_data(ttl=60)
 def load_data() -> pd.DataFrame:
     if not CSV_PATH.exists():
         return pd.DataFrame(columns=[
-            "Título", "Organización", "Tipo", "Región",
+            "Título", "Organización", "Tipo", "Región", "País",
             "Fecha límite", "Enlace", "Afinidad", "Prioridad",
+            "Estado", "Monto estimado (USD)", "Consultor",
         ])
     df = pd.read_csv(CSV_PATH)
     df.columns = df.columns.str.strip()
+
+    # Columnas existentes con limpieza estándar
     for col in ["Prioridad", "Afinidad", "Tipo", "Región", "Fecha límite"]:
         df[col] = df.get(col, pd.Series(dtype=str)).fillna("—").str.strip()
+
+    # Columnas nuevas opcionales — se crean con default si no existen
+    if "Estado" not in df.columns:
+        df["Estado"] = "Identificada"
+    else:
+        df["Estado"] = df["Estado"].fillna("Identificada").str.strip()
+
+    if "País" not in df.columns:
+        df["País"] = "—"
+    else:
+        df["País"] = df["País"].fillna("—").str.strip()
+
+    if "Monto estimado (USD)" not in df.columns:
+        df["Monto estimado (USD)"] = 0
+    else:
+        df["Monto estimado (USD)"] = pd.to_numeric(
+            df["Monto estimado (USD)"].astype(str).str.replace(",", "").str.replace("$", ""),
+            errors="coerce",
+        ).fillna(0)
+
+    if "Consultor" not in df.columns:
+        df["Consultor"] = "—"
+    else:
+        df["Consultor"] = df["Consultor"].fillna("—").str.strip()
+
     return df
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -422,7 +511,8 @@ with st.sidebar:
     if LOGO_B64:
         st.markdown(
             f"<div style='padding:0.4rem 0 1rem'>"
-            f"<img src='data:image/png;base64,{LOGO_B64}' style='height:44px;filter:brightness(0) invert(1);'>"
+            f"<img src='data:image/png;base64,{LOGO_B64}' "
+            f"style='height:44px;filter:brightness(0) invert(1);'>"
             f"</div>",
             unsafe_allow_html=True,
         )
@@ -441,14 +531,28 @@ with st.sidebar:
         ["Individual", "Empresarial", "Ambos"],
         default=["Individual", "Empresarial", "Ambos"],
     )
+    estado_sel = st.multiselect(
+        "Estado",
+        ESTADOS_ORDEN,
+        default=[e for e in ESTADOS_ORDEN if e != "Descartada"],
+    )
+
+    # Consultor: combinar lista fija + valores del CSV
+    consultores_csv = df_full["Consultor"].dropna().unique().tolist()
+    consultores_opts = sorted(set(CONSULTORES + consultores_csv))
+    consultor_sel = st.multiselect("Consultor", consultores_opts, default=consultores_opts)
+
     regiones = sorted(df_full["Región"].dropna().unique().tolist())
     region_sel = st.multiselect("Región", regiones, default=regiones)
+
+    paises = sorted(df_full["País"].dropna().unique().tolist())
+    pais_sel = st.multiselect("País", paises, default=paises)
+
     texto = st.text_input("Buscar", placeholder="UNDP, cacao, agroecología…")
 
     st.divider()
     st.markdown("### ⚙️ Actualizar datos")
 
-    # API key: primero st.secrets (nube), luego variable de entorno (local)
     _default_key = (
         st.secrets.get("TAVILY_API_KEY", "")
         if hasattr(st, "secrets") else ""
@@ -461,11 +565,10 @@ with st.sidebar:
         help="Opcional — mejora la búsqueda con IA.",
     )
 
-    # El botón de búsqueda solo funciona en local (tiene acceso al script y al disco)
     _is_cloud = not SCRIPT_PATH.exists()
     if _is_cloud:
         st.info(
-            "**Actualización automática:** lunes y jueves a las 8 AM desde tu Mac.\n\n"
+            "**Actualización automática:** lunes y jueves vía GitHub Actions.\n\n"
             "Para actualizar ahora, abrí una Terminal en tu Mac y ejecutá:\n\n"
             "`/Users/fvillareal/actualizar_y_publicar.sh`",
             icon="ℹ️",
@@ -502,14 +605,22 @@ if prioridad_sel:
     df = df[df["Prioridad"].isin(prioridad_sel)]
 if afinidad_sel:
     df = df[df["Afinidad"].isin(afinidad_sel)]
+if estado_sel:
+    df = df[df["Estado"].isin(estado_sel)]
+if consultor_sel:
+    df = df[df["Consultor"].isin(consultor_sel)]
 if region_sel:
     df = df[df["Región"].isin(region_sel)]
+if pais_sel:
+    df = df[df["País"].isin(pais_sel)]
 if texto.strip():
     mask = (
         df["Título"].str.contains(texto, case=False, na=False) |
         df["Organización"].str.contains(texto, case=False, na=False)
     )
     df = df[mask]
+
+# ── Ordenamiento ──────────────────────────────────────────────────────────────
 
 MONTH_ES = {
     "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
@@ -518,17 +629,13 @@ MONTH_ES = {
 }
 
 def parse_deadline(raw: str) -> datetime:
-    """Convierte la fecha de cierre a datetime para ordenamiento.
-    Las fechas no reconocidas van al final (año 2099)."""
     s = (raw or "").strip().lower()
-    # ISO: 2026-05-18
     m = re.search(r"(\d{4})-(\d{2})-(\d{2})", s)
     if m:
         try:
             return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)))
         except ValueError:
             pass
-    # DD-Mmm-YYYY: 18-may-2026
     m = re.search(r"(\d{1,2})-([a-z]{3})-(\d{4})", s)
     if m:
         mon = MONTH_ES.get(m.group(2))
@@ -537,7 +644,6 @@ def parse_deadline(raw: str) -> datetime:
                 return datetime(int(m.group(3)), mon, int(m.group(1)))
             except ValueError:
                 pass
-    # Sin fecha reconocible → al final
     return datetime(2099, 12, 31)
 
 orden_prio = {"Alta": 0, "Media": 1, "Baja": 2}
@@ -547,6 +653,15 @@ df["_ord_fecha"] = df["Fecha límite"].apply(parse_deadline)
 df = df.sort_values(["_ord_prio", "_ord_fecha"]).drop(columns=["_ord_prio", "_ord_fecha"])
 
 # ── Hero / Header ─────────────────────────────────────────────────────────────
+
+mtime    = csv_mtime()
+hoy      = date.today()
+days_old = (datetime.now() - mtime).days if mtime else 999
+
+csv_date_html = (
+    f'<div class="ceo-hero-csv-date">🔄 Datos: {fmt_date_es(mtime)}</div>'
+    if mtime else ""
+)
 
 logo_html = (
     f"<img src='data:image/png;base64,{LOGO_B64}' alt='Grupo CEO'>"
@@ -561,11 +676,14 @@ st.markdown(f"""
     <h1>Oportunidades de Consultoría</h1>
     <p>Monitoreo de convocatorias · Perfiles Individual &amp; Empresarial · ALC &amp; Global</p>
   </div>
-  <div class="ceo-hero-date">📅 {date.today().strftime('%d %b %Y')}</div>
+  <div class="ceo-hero-dates">
+    <div class="ceo-hero-date">📅 {hoy.strftime('%d %b %Y')}</div>
+    {csv_date_html}
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ── Hint mobile (solo visible en pantallas pequeñas) ─────────────────────────
+# ── Hint mobile ───────────────────────────────────────────────────────────────
 
 st.markdown("""
 <div class="mobile-hint">
@@ -574,12 +692,24 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ── Banner datos desactualizados ──────────────────────────────────────────────
+
+if days_old > 7:
+    st.markdown(
+        '<div class="stale-banner">'
+        f'⚠️ Los datos tienen más de {days_old} días. Considerá ejecutar una nueva búsqueda.'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
 # ── Métricas ──────────────────────────────────────────────────────────────────
 
 total     = len(df)
 n_alta    = len(df[df["Prioridad"] == "Alta"])
 n_ind     = len(df[df["Afinidad"].isin(["Individual", "Ambos"])])
 n_empresa = len(df[df["Afinidad"].isin(["Empresarial", "Ambos"])])
+pipeline  = df["Monto estimado (USD)"].sum()
+pipeline_fmt = f"${pipeline:,.0f}" if pipeline > 0 else "—"
 
 st.markdown(f"""
 <div class="metrics-bar">
@@ -599,6 +729,10 @@ st.markdown(f"""
     <div class="metric-num">{n_empresa}</div>
     <div class="metric-label">🏢 Para CEO</div>
   </div>
+  <div class="metric-pill">
+    <div class="metric-num-sm" style="color:#0D47A1">{pipeline_fmt}</div>
+    <div class="metric-label">💰 Pipeline USD</div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -609,28 +743,41 @@ if df.empty:
     <div class="empty-state">
       <div class="icon">🌿</div>
       <p>No hay oportunidades con los filtros actuales.<br>
-      Ajusta los filtros o ejecuta una nueva búsqueda.</p>
+      Ajustá los filtros o ejecutá una nueva búsqueda.</p>
     </div>
     """, unsafe_allow_html=True)
 else:
     grupo_actual = None
     for _, row in df.iterrows():
-        prio  = row.get("Prioridad", "Media")
-        pconf = PRIO_MAP.get(prio, PRIO_MAP["Media"])
+        prio   = row.get("Prioridad", "Media")
+        pconf  = PRIO_MAP.get(prio, PRIO_MAP["Media"])
+        estado = row.get("Estado", "Identificada")
+        econf  = ESTADO_CHIPS.get(estado, ESTADO_CHIPS["Identificada"])
 
-        # Separador de grupo por prioridad
         if prio != grupo_actual:
             grupo_actual = prio
-            labels = {"Alta": "🔴 Prioridad Alta", "Media": "🟡 Prioridad Media", "Baja": "🟢 Otras oportunidades"}
-            st.markdown(f'<div class="section-header">{labels.get(prio, prio)}</div>', unsafe_allow_html=True)
+            labels = {
+                "Alta":  "🔴 Prioridad Alta",
+                "Media": "🟡 Prioridad Media",
+                "Baja":  "🟢 Otras oportunidades",
+            }
+            st.markdown(
+                f'<div class="section-header">{labels.get(prio, prio)}</div>',
+                unsafe_allow_html=True,
+            )
 
-        titulo = row.get("Título", "Sin título")
-        org    = row.get("Organización", "—")
-        tipo   = row.get("Tipo", "—")
-        region = row.get("Región", "—")
-        fecha  = row.get("Fecha límite", "—")
-        enlace = row.get("Enlace", "")
-        afin   = row.get("Afinidad", "—")
+        titulo    = row.get("Título", "Sin título")
+        org       = row.get("Organización", "—")
+        region    = row.get("Región", "—")
+        pais      = row.get("País", "—")
+        fecha     = row.get("Fecha límite", "—")
+        enlace    = row.get("Enlace", "")
+        afin      = row.get("Afinidad", "—")
+        consultor = row.get("Consultor", "—")
+        monto     = float(row.get("Monto estimado (USD)", 0) or 0)
+
+        descartada = (estado == "Descartada")
+        title_cls  = "opp-title-descartada" if descartada else "opp-title"
 
         chip_prio_cls = {"Alta": "chip-alta", "Media": "chip-media", "Baja": "chip-baja"}.get(prio, "chip-mid")
 
@@ -639,18 +786,34 @@ else:
             if enlace.startswith("http") else "—"
         )
 
+        pais_chip = (
+            f'<span class="chip chip-mid">📍 {pais}</span>'
+            if pais and pais != "—" else ""
+        )
+        monto_chip = (
+            f'<span class="chip chip-monto">💰 ${monto:,.0f}</span>'
+            if monto > 0 else ""
+        )
+        consultor_chip = (
+            f'<span class="chip chip-mid">👤 {consultor}</span>'
+            if consultor and consultor != "—" else ""
+        )
+
         st.markdown(f"""
         <div class="opp-card" style="border-left-color:{pconf['border']}; background:{pconf['bg']}08;">
-          <div class="opp-title">{titulo}</div>
+          <div class="{title_cls}">{titulo}</div>
           <div class="opp-meta">
             <span>🏛 <strong>{org}</strong></span>
             <span>📍 {region}</span>
             <span>📅 <strong>{fecha}</strong></span>
           </div>
           <div class="opp-chips">
-            <span class="chip chip-dark">{tipo}</span>
-            <span class="chip chip-mid">{afin}</span>
+            <span class="chip chip-dark">{afin}</span>
             <span class="chip {chip_prio_cls}">{pconf['badge']} {prio}</span>
+            <span class="chip" style="background:{econf['bg']};color:{econf['color']};">{estado}</span>
+            {pais_chip}
+            {monto_chip}
+            {consultor_chip}
             <span class="opp-link">{link_html}</span>
           </div>
         </div>
@@ -658,9 +821,16 @@ else:
 
 # ── Descarga ──────────────────────────────────────────────────────────────────
 
+export_cols = [
+    "Título", "Organización", "Tipo", "Región", "País",
+    "Fecha límite", "Enlace", "Afinidad", "Prioridad",
+    "Estado", "Monto estimado (USD)", "Consultor",
+]
+export_df = df[[c for c in export_cols if c in df.columns]]
+
 st.download_button(
     label="⬇️ Descargar resultados filtrados (CSV)",
-    data=df.drop(columns=["_ord"], errors="ignore").to_csv(index=False).encode("utf-8"),
+    data=export_df.to_csv(index=False).encode("utf-8"),
     file_name=f"ceo_consultorias_{date.today()}.csv",
     mime="text/csv",
 )

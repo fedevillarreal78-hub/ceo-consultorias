@@ -182,6 +182,43 @@ def agrupar_region(region: str) -> str:
 
 LOGO_B64 = get_logo_b64()
 
+# Mapa región → países para auto-populate del filtro País
+REGION_TO_PAISES: dict[str, list[str]] = {
+    "Cono Sur": [
+        "Argentina", "Bolivia", "Brasil", "Chile", "Paraguay", "Uruguay",
+    ],
+    "América Latina": [
+        "Belice", "Colombia", "Costa Rica", "Cuba", "Ecuador",
+        "El Salvador", "Guatemala", "Haití", "Honduras", "México",
+        "Nicaragua", "Panamá", "Perú", "República Dominicana", "Venezuela",
+        "América Central", "América del Sur", "América Latina",
+        "Centroamérica", "Regional", "Global",
+    ],
+    "Caribe": [
+        "Antigua y Barbuda", "Bahamas", "Barbados", "Cuba", "Dominica",
+        "Granada", "Guyana", "Haití", "Jamaica", "República Dominicana",
+        "San Cristóbal y Nieves", "San Vicente y las Granadinas",
+        "Santa Lucía", "Surinam", "Trinidad y Tobago",
+        "Caribe",
+    ],
+    "Europa": [
+        "Albania", "Alemania", "Andorra", "Armenia", "Austria",
+        "Azerbaiyán", "Bélgica", "Bosnia y Herzegovina", "Bulgaria",
+        "Chipre", "Croacia", "Dinamarca", "Eslovaquia", "Eslovenia",
+        "España", "Estonia", "Finlandia", "Francia", "Georgia",
+        "Grecia", "Hungría", "Irlanda", "Islandia", "Italia",
+        "Letonia", "Liechtenstein", "Lituania", "Luxemburgo", "Malta",
+        "Moldavia", "Mónaco", "Montenegro", "Noruega", "Países Bajos",
+        "Polonia", "Portugal", "Reino Unido", "República Checa",
+        "Rumanía", "Rusia", "San Marino", "Serbia", "Suecia",
+        "Suiza", "Ucrania",
+    ],
+}
+_paises_asignados = {p for lst in REGION_TO_PAISES.values() for p in lst}
+REGION_TO_PAISES["Otros"] = sorted(
+    p for p in TODOS_PAISES if p != "—" and p not in _paises_asignados
+)
+
 # ── Datos ─────────────────────────────────────────────────────────────────────
 
 @st.cache_data(ttl=60)
@@ -541,13 +578,17 @@ st.markdown(f"""
   }}
   section[data-testid="stSidebar"] * {{ color: {WHITE} !important; }}
 
-  /* Inputs y multiselects */
+  /* Inputs y multiselects — fondo claro, texto negro legible */
   section[data-testid="stSidebar"] .stTextInput input,
   section[data-testid="stSidebar"] .stMultiSelect div[data-baseweb="select"] {{
-    background: rgba(255,255,255,0.12) !important;
-    border-color: rgba(255,255,255,0.3) !important;
+    background: rgba(255,255,255,0.97) !important;
+    border-color: rgba(255,255,255,0.4) !important;
     border-radius: 8px !important;
     font-size: 0.83rem !important;
+    color: #1A3D2E !important;
+  }}
+  section[data-testid="stSidebar"] .stMultiSelect div[data-baseweb="select"] * {{
+    color: #1A3D2E !important;
   }}
 
   /* Etiquetas — tipografía mejorada */
@@ -584,12 +625,20 @@ st.markdown(f"""
     padding: 0 2px !important;
   }}
 
-  /* Dropdown opciones */
-  section[data-testid="stSidebar"] [data-baseweb="popover"] *,
-  section[data-testid="stSidebar"] [role="listbox"] * {{
-    background: #0A1A10 !important;
-    color: {WHITE} !important;
+  /* Dropdown opciones — global (el popover se renderiza fuera del sidebar DOM) */
+  [data-baseweb="popover"] [role="option"],
+  [data-baseweb="popover"] li {{
+    background: #FFFFFF !important;
+    color: #1A3D2E !important;
     font-size: 0.82rem !important;
+  }}
+  [data-baseweb="popover"] [role="option"]:hover {{
+    background: #EEF6EE !important;
+    color: #1A3D2E !important;
+  }}
+  [data-baseweb="popover"] [aria-selected="true"] {{
+    background: #C8E8CA !important;
+    color: #1A3D2E !important;
   }}
 
   /* Divider */
@@ -610,11 +659,11 @@ st.markdown(f"""
 
   /* Text input buscar */
   section[data-testid="stSidebar"] .stTextInput input {{
-    color: {WHITE} !important;
+    color: #1A3D2E !important;
     font-size: 0.85rem !important;
   }}
   section[data-testid="stSidebar"] .stTextInput input::placeholder {{
-    color: rgba(255,255,255,0.4) !important;
+    color: rgba(26,61,46,0.5) !important;
   }}
 
   /* ── Hero ── */
@@ -826,11 +875,29 @@ with st.sidebar:
     consultores_opts = sorted(set(CONSULTORES + consultores_csv))
     consultor_sel    = st.multiselect("Consultor", consultores_opts, default=consultores_opts)
 
-    # Regiones agrupadas (5 categorías fijas)
+    # Regiones agrupadas — al cambiar, auto-popula el filtro País
+    if "_prev_region" not in st.session_state:
+        st.session_state["_prev_region"] = list(REGIONES_GRUPO)
+
     region_sel = st.multiselect("Región", REGIONES_GRUPO, default=REGIONES_GRUPO)
 
+    # Detectar cambio de región → actualizar país antes de renderizar el widget
+    if sorted(region_sel) != sorted(st.session_state["_prev_region"]):
+        st.session_state["_prev_region"] = list(region_sel)
+        if set(region_sel) == set(REGIONES_GRUPO):
+            st.session_state["sb_pais"] = []
+        else:
+            auto_p: list[str] = []
+            for rg in region_sel:
+                auto_p.extend(REGION_TO_PAISES.get(rg, []))
+            st.session_state["sb_pais"] = sorted(
+                p for p in set(auto_p) if p in TODOS_PAISES
+            )
+
     # País: todos los países del mundo; sin selección = sin filtro
-    pais_sel = st.multiselect("País", TODOS_PAISES, default=[], placeholder="Todos los países…")
+    pais_sel = st.multiselect(
+        "País", TODOS_PAISES, key="sb_pais", placeholder="Todos los países…"
+    )
 
     texto = st.text_input("Buscar", placeholder="UNDP, cacao, agroecología…")
 

@@ -358,6 +358,34 @@ st.markdown(f"""
     .metric-pill {{ flex: 1 1 48%; }}
     .opp-card {{ margin-bottom: 0.6rem; }}
   }}
+
+  /* ── Hint mobile sidebar ── */
+  .mobile-hint {{
+    display: none;
+  }}
+  @media (max-width: 768px) {{
+    .mobile-hint {{
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: {GREEN_DARK};
+      color: {WHITE};
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 0.55rem 1.2rem;
+      border-bottom: 2px solid {GREEN_MID};
+      margin-left: -0.8rem;
+      margin-right: -0.8rem;
+    }}
+    .mobile-hint .arrow-icon {{
+      background: {GREEN_ACCENT};
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.4;
+    }}
+  }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -522,6 +550,15 @@ st.markdown(f"""
     <p>Monitoreo de convocatorias · Perfiles Individual &amp; Empresarial · ALC &amp; Global</p>
   </div>
   <div class="ceo-hero-date">📅 {date.today().strftime('%d %b %Y')}</div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Hint mobile (solo visible en pantallas pequeñas) ─────────────────────────
+
+st.markdown("""
+<div class="mobile-hint">
+  <span class="arrow-icon">☰</span>
+  <span>Tocá el ícono de arriba a la izquierda para <strong>filtrar oportunidades</strong></span>
 </div>
 """, unsafe_allow_html=True)
 

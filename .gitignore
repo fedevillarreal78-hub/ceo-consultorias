@@ -1,0 +1,18 @@
+# Sistema
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Credenciales — nunca subir
+*.key
+secrets.toml
+.streamlit/secrets.toml
+
+# Logs y temporales
+*.log
+nuevas_esta_semana.txt
+
+# Excel generado
+*.xlsx

@@ -78,10 +78,16 @@ EXCLUSION_SIGNALS = [
 
 # Patrones en la URL que indican noticias o contenido editorial
 EXCLUSION_URL_PATTERNS = [
+    # Inglés
     "/news/", "/blog/", "/press/", "/media/", "/stories/",
     "/opinion/", "/report/", "/publication/", "/document/",
     "/event/", "/training/", "/workshop/", "/webinar/",
     "/update/", "/article/", "/feature/", "/resource/",
+    # Español (faltan en muchos sitios de OI)
+    "/prensa/", "/noticias/", "/noticia/", "/newsletter/",
+    "/publicacion/", "/publicaciones/", "/eventos/", "/evento/",
+    "/capacitacion/", "/taller/", "/webinars/",
+    # Redes sociales y anclas
     "twitter.com", "linkedin.com", "youtube.com", "facebook.com",
     "mailto:", "#",
 ]
@@ -376,7 +382,6 @@ def scrape_tavily(api_key: str) -> list:
                     "wfp.org",
                     "worldbank.org",
                     "iadb.org",
-                    "iica.int",
                     "fontagro.org",
                     # Sedes europeas — OI con HQ en Europa
                     "ted.europa.eu",           # TED – licitaciones UE

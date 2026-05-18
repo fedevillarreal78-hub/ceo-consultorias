@@ -204,6 +204,11 @@ def load_data() -> pd.DataFrame:
         else:
             df[col] = df[col].fillna(default).str.strip()
 
+    if "Observaciones" not in df.columns:
+        df["Observaciones"] = ""
+    else:
+        df["Observaciones"] = df["Observaciones"].fillna("")
+
     if "Monto estimado (USD)" not in df.columns:
         df["Monto estimado (USD)"] = 0.0
     else:
@@ -245,7 +250,7 @@ def save_df(df: pd.DataFrame) -> None:
     export_cols = [
         "Título", "Organización", "Tipo", "Región", "País",
         "Fecha límite", "Enlace", "Afinidad", "Prioridad",
-        "Estado", "Monto estimado (USD)", "Consultor",
+        "Estado", "Monto estimado (USD)", "Consultor", "Observaciones",
     ]
     df[[c for c in export_cols if c in df.columns]].to_csv(CSV_PATH, index=False)
     st.cache_data.clear()
@@ -262,9 +267,12 @@ def generar_pdf(df_all: pd.DataFrame, hoy: date) -> bytes:
     RS, GS, BS = 238, 246, 238    # BG_SAGE
 
     def safe(text, max_chars=None) -> str:
-        s = str(text or "—").encode("latin-1", "replace").decode("latin-1")
+        s = (str(text or "-")
+             .replace("—", "-").replace("–", "-")
+             .replace("·", ".").replace("…", "..."))
+        s = s.encode("latin-1", "replace").decode("latin-1")
         if max_chars and len(s) > max_chars:
-            s = s[:max_chars - 1] + "…"
+            s = s[:max_chars - 1] + "."
         return s
 
     df_active = df_all[df_all["Estado"] != "Descartada"].copy()
@@ -287,14 +295,14 @@ def generar_pdf(df_all: pd.DataFrame, hoy: date) -> bytes:
             self.set_font("Helvetica", "B", 8)
             self.set_text_color(255, 255, 255)
             self.set_xy(10, 3)
-            self.cell(0, 8, safe(f"GRUPO CEO — Informe de Pipeline · {hoy.day} de {MESES_LARGO[hoy.month]} de {hoy.year}"))
+            self.cell(0, 8, safe(f"GRUPO CEO - Informe de Pipeline | {hoy.day} de {MESES_LARGO[hoy.month]} de {hoy.year}"))
             self.ln(14)
 
         def footer(self):
             self.set_y(-12)
             self.set_font("Helvetica", "", 7)
             self.set_text_color(160, 160, 160)
-            self.cell(0, 5, f"Página {self.page_no()} — Confidencial · Uso interno Grupo CEO", align="C")
+            self.cell(0, 5, safe(f"Pagina {self.page_no()} - Confidencial | Uso interno Grupo CEO"), align="C")
 
         def section_title(self, title: str, r=RD, g=GD, b=BD):
             self.set_fill_color(r, g, b)
@@ -325,7 +333,7 @@ def generar_pdf(df_all: pd.DataFrame, hoy: date) -> bytes:
             alt = True
             for i, (_, row) in enumerate(df_t.iterrows(), 1):
                 monto = float(row.get("Monto estimado (USD)", 0) or 0)
-                monto_s = f"${monto:,.0f}" if monto > 0 else "—"
+                monto_s = f"${monto:,.0f}" if monto > 0 else "-"
                 vals = [
                     str(i),
                     safe(row.get("Título", "—"), 55),
@@ -420,9 +428,9 @@ def generar_pdf(df_all: pd.DataFrame, hoy: date) -> bytes:
         cnt = estado_counts.get(estado, 0)
         if cnt == 0:
             continue
-        pct = f"{cnt / total_act * 100:.1f}%" if total_act > 0 else "—"
+        pct = f"{cnt / total_act * 100:.1f}%" if total_act > 0 else "-"
         mont = df_active[df_active["Estado"] == estado]["Monto estimado (USD)"].sum()
-        mont_s = f"${mont:,.0f}" if mont > 0 else "—"
+        mont_s = f"${mont:,.0f}" if mont > 0 else "-"
         pdf.set_fill_color(RS, GS, BS) if alt else pdf.set_fill_color(255, 255, 255)
         pdf.set_text_color(30, 30, 30)
         pdf.set_font("Helvetica", "", 8)
@@ -464,7 +472,7 @@ def generar_pdf(df_all: pd.DataFrame, hoy: date) -> bytes:
         pdf.cell(22, 6, str(len(sub)), border=1, fill=True)
         pdf.cell(28, 6, str(n_alt_c), border=1, fill=True)
         pdf.cell(28, 6, str(n_pro_c), border=1, fill=True)
-        pdf.cell(40, 6, f"${pipe_c:,.0f}" if pipe_c > 0 else "—", border=1, fill=True)
+        pdf.cell(40, 6, f"${pipe_c:,.0f}" if pipe_c > 0 else "-", border=1, fill=True)
         pdf.ln()
         alt = not alt
 
@@ -474,9 +482,9 @@ def generar_pdf(df_all: pd.DataFrame, hoy: date) -> bytes:
         pdf.set_font("Helvetica", "I", 8)
         pdf.cell(55, 6, "Sin asignar", border=1, fill=True)
         pdf.cell(22, 6, str(sin_asig_n), border=1, fill=True)
-        pdf.cell(28, 6, "—", border=1, fill=True)
-        pdf.cell(28, 6, "—", border=1, fill=True)
-        pdf.cell(40, 6, "—", border=1, fill=True)
+        pdf.cell(28, 6, "-", border=1, fill=True)
+        pdf.cell(28, 6, "-", border=1, fill=True)
+        pdf.cell(40, 6, "-", border=1, fill=True)
         pdf.ln()
 
     # ── PIPELINE ACTIVO — ALTA PRIORIDAD ─────────────────────────────────────
@@ -528,7 +536,7 @@ st.markdown(f"""
 
   /* ── Sidebar ── */
   section[data-testid="stSidebar"] {{
-    background: {GREEN_DARK};
+    background: #0A1A10;
     min-width: 280px !important;
   }}
   section[data-testid="stSidebar"] * {{ color: {WHITE} !important; }}
@@ -536,8 +544,8 @@ st.markdown(f"""
   /* Inputs y multiselects */
   section[data-testid="stSidebar"] .stTextInput input,
   section[data-testid="stSidebar"] .stMultiSelect div[data-baseweb="select"] {{
-    background: rgba(255,255,255,0.1) !important;
-    border-color: rgba(255,255,255,0.2) !important;
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.3) !important;
     border-radius: 8px !important;
     font-size: 0.83rem !important;
   }}
@@ -545,8 +553,8 @@ st.markdown(f"""
   /* Etiquetas — tipografía mejorada */
   section[data-testid="stSidebar"] label,
   section[data-testid="stSidebar"] .stMultiSelect label {{
-    color: rgba(255,255,255,0.7) !important;
-    font-weight: 500 !important;
+    color: rgba(255,255,255,0.9) !important;
+    font-weight: 600 !important;
     font-size: 0.78rem !important;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -579,7 +587,7 @@ st.markdown(f"""
   /* Dropdown opciones */
   section[data-testid="stSidebar"] [data-baseweb="popover"] *,
   section[data-testid="stSidebar"] [role="listbox"] * {{
-    background: {GREEN_DARK} !important;
+    background: #0A1A10 !important;
     color: {WHITE} !important;
     font-size: 0.82rem !important;
   }}
@@ -821,9 +829,8 @@ with st.sidebar:
     # Regiones agrupadas (5 categorías fijas)
     region_sel = st.multiselect("Región", REGIONES_GRUPO, default=REGIONES_GRUPO)
 
-    # País: valores del CSV únicamente en el filtro
-    paises_csv = sorted(df_full["País"].dropna().unique().tolist())
-    pais_sel   = st.multiselect("País", paises_csv, default=paises_csv)
+    # País: todos los países del mundo; sin selección = sin filtro
+    pais_sel = st.multiselect("País", TODOS_PAISES, default=[], placeholder="Todos los países…")
 
     texto = st.text_input("Buscar", placeholder="UNDP, cacao, agroecología…")
 
@@ -1159,7 +1166,7 @@ with tab2:
 """, unsafe_allow_html=True)
 
             with st.expander(f"Ver oportunidades de {nombre} ({len(sub)})"):
-                for _, r in sub.sort_values("Prioridad").iterrows():
+                for idx2, r in sub.sort_values("Prioridad").iterrows():
                     pc2  = PRIO_MAP.get(r.get("Prioridad", "Media"), PRIO_MAP["Media"])
                     ec2  = ESTADO_CHIPS.get(r.get("Estado", "Identificada"), ESTADO_CHIPS["Identificada"])
                     en2  = str(r.get("Enlace", "") or "")
@@ -1168,7 +1175,7 @@ with tab2:
                     mo2  = float(r.get("Monto estimado (USD)", 0) or 0)
                     mo2s = f'<span class="chip chip-monto">💰 ${mo2:,.0f} USD</span>' if mo2 > 0 else ""
                     st.markdown(f"""
-<div class="opp-card" style="border-left-color:{pc2['border']};background:{pc2['bg']}08;margin-bottom:0.45rem;">
+<div class="opp-card" style="border-left-color:{pc2['border']};background:{pc2['bg']}08;margin-bottom:0.3rem;">
   <div class="opp-title">{esc(r.get('Título',''))}</div>
   <div class="opp-meta">
     <span>🏛 {esc(r.get('Organización','—'))}</span>
@@ -1182,6 +1189,27 @@ with tab2:
   </div>
 </div>
 """, unsafe_allow_html=True)
+                    # Observaciones por oportunidad (hasta 250 chars)
+                    obs_val = str(r.get("Observaciones", "") or "")
+                    col_obs, col_save_obs = st.columns([5, 1])
+                    with col_obs:
+                        obs_new = st.text_area(
+                            "obs",
+                            value=obs_val,
+                            max_chars=250,
+                            key=f"obs_{idx2}",
+                            placeholder="Observaciones (máx. 250 caracteres)…",
+                            label_visibility="collapsed",
+                            height=68,
+                        )
+                    with col_save_obs:
+                        st.write("")
+                        if obs_new != obs_val:
+                            if st.button("💾", key=f"sobs_{idx2}", help="Guardar observación"):
+                                df_c.at[idx2, "Observaciones"] = obs_new
+                                save_df(df_c)
+                                st.rerun()
+                    st.markdown("<hr style='margin:0.3rem 0;border-color:#E8F5E9;'>", unsafe_allow_html=True)
 
     if len(sin_asig) > 0:
         st.markdown(f'<div class="section-header" style="margin-top:1rem;">Sin asignar ({len(sin_asig)})</div>', unsafe_allow_html=True)

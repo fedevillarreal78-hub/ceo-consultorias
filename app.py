@@ -1245,6 +1245,65 @@ with tab3:
     if _is_cloud:
         st.info("Versión en la nube: guardá los cambios y descargá el CSV para subirlo al repositorio.", icon="ℹ️")
 
+    # ── Formulario de carga manual ────────────────────────────────────────────
+    st.markdown(f'<div class="section-header" style="margin-bottom:0.8rem;">➕ Agregar consultoría manualmente</div>', unsafe_allow_html=True)
+    with st.form("form_nueva_opp", clear_on_submit=True):
+        fc1, fc2 = st.columns([3, 2])
+        with fc1:
+            f_titulo  = st.text_input("Título *", placeholder="Nombre de la consultoría o convocatoria")
+            f_org     = st.text_input("Organización *", placeholder="UNDP, FAO, BID, IICA…")
+            f_enlace  = st.text_input("Enlace / URL", placeholder="https://…")
+            f_obs     = st.text_area("Observaciones", placeholder="Notas internas (máx. 250 caracteres)…", max_chars=250, height=80)
+        with fc2:
+            f_pais    = st.selectbox("País", TODOS_PAISES, index=TODOS_PAISES.index("—") if "—" in TODOS_PAISES else 0)
+            f_region  = st.text_input("Región", placeholder="ALC, Global, Cono Sur…")
+            f_fecha   = st.text_input("Fecha límite", placeholder="YYYY-MM-DD")
+            f_monto   = st.number_input("Monto estimado (USD)", min_value=0, value=0, step=1000)
+
+        ff1, ff2, ff3, ff4, ff5 = st.columns(5)
+        with ff1:
+            f_tipo    = st.selectbox("Tipo", ["Individual", "Servicios", "Licitación", "Otro"])
+        with ff2:
+            f_afin    = st.selectbox("Afinidad", ["Individual", "Empresarial", "Ambos"])
+        with ff3:
+            f_prio    = st.selectbox("Prioridad", ["Alta", "Media", "Baja"], index=1)
+        with ff4:
+            f_estado  = st.selectbox("Estado", ESTADOS_ORDEN, index=0)
+        with ff5:
+            f_consul  = st.selectbox("Consultor", CONSULTORES, index=0)
+
+        submitted = st.form_submit_button("✅ Agregar a la base de datos", type="primary", use_container_width=True)
+
+    if submitted:
+        if not f_titulo.strip():
+            st.error("El campo **Título** es obligatorio.")
+        elif not f_org.strip():
+            st.error("El campo **Organización** es obligatorio.")
+        else:
+            nueva_fila = {
+                "Título":               f_titulo.strip(),
+                "Organización":         f_org.strip(),
+                "Tipo":                 f_tipo,
+                "Región":               f_region.strip() if f_region.strip() else "—",
+                "País":                 f_pais,
+                "Fecha límite":         f_fecha.strip() if f_fecha.strip() else "—",
+                "Enlace":               f_enlace.strip(),
+                "Afinidad":             f_afin,
+                "Prioridad":            f_prio,
+                "Estado":               f_estado,
+                "Monto estimado (USD)": float(f_monto) if f_monto else 0.0,
+                "Consultor":            f_consul,
+                "Observaciones":        f_obs.strip(),
+            }
+            df_base = load_data()
+            nueva_df = pd.DataFrame([nueva_fila])
+            df_updated = pd.concat([df_base, nueva_df], ignore_index=True)
+            save_df(df_updated)
+            st.success(f"✅ **{f_titulo.strip()}** agregada correctamente a la base de datos.")
+            st.rerun()
+
+    st.divider()
+
     df_edit = load_data()
     EDIT_COLS = ["Título", "Organización", "Fecha límite", "Prioridad", "Estado", "Consultor", "Monto estimado (USD)", "País"]
     df_show   = df_edit[[c for c in EDIT_COLS if c in df_edit.columns]].copy()

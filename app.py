@@ -15,7 +15,7 @@ st.set_page_config(
     page_title="Oportunidades · Grupo CEO",
     page_icon="🌿",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 CSV_PATH    = Path(__file__).parent / "oportunidades_consultoria.csv"
@@ -424,7 +424,12 @@ with st.sidebar:
     # El botón de búsqueda solo funciona en local (tiene acceso al script y al disco)
     _is_cloud = not SCRIPT_PATH.exists()
     if _is_cloud:
-        st.info("La búsqueda se ejecuta desde la Mac con el cron job.\nEl CSV se actualiza automáticamente.", icon="ℹ️")
+        st.info(
+            "**Actualización automática:** lunes y jueves a las 8 AM desde tu Mac.\n\n"
+            "Para actualizar ahora, abrí una Terminal en tu Mac y ejecutá:\n\n"
+            "`/Users/fvillareal/actualizar_y_publicar.sh`",
+            icon="ℹ️",
+        )
     else:
         if st.button("▶ Buscar nuevas oportunidades", use_container_width=True):
             with st.spinner("Buscando en UNDP, ReliefWeb, FAO, IDB, Devex…"):

@@ -21,6 +21,7 @@ st.set_page_config(
 )
 
 CSV_PATH    = Path(__file__).parent / "oportunidades_consultoria.csv"
+SOCIOS_CSV  = Path(__file__).parent / "socios_estrategicos.csv"
 SCRIPT_PATH = Path(__file__).parent / "buscar_consultorias.py"
 LOGO_PATH   = Path(__file__).parent / "logo_ceo.png"
 
@@ -184,13 +185,16 @@ LOGO_B64 = get_logo_b64()
 
 # Mapa región → países para auto-populate del filtro País
 REGION_TO_PAISES: dict[str, list[str]] = {
+    # Cono Sur estricto: Río de la Plata + Chile
     "Cono Sur": [
-        "Argentina", "Bolivia", "Brasil", "Chile", "Paraguay", "Uruguay",
+        "Argentina", "Chile", "Paraguay", "Uruguay",
     ],
+    # América Latina amplia: Andina + Mesoamérica + Brasil + entradas regionales
     "América Latina": [
-        "Belice", "Colombia", "Costa Rica", "Cuba", "Ecuador",
-        "El Salvador", "Guatemala", "Haití", "Honduras", "México",
-        "Nicaragua", "Panamá", "Perú", "República Dominicana", "Venezuela",
+        "Belice", "Bolivia", "Brasil", "Colombia", "Costa Rica",
+        "Cuba", "Ecuador", "El Salvador", "Guatemala", "Haití",
+        "Honduras", "México", "Nicaragua", "Panamá", "Perú",
+        "República Dominicana", "Venezuela",
         "América Central", "América del Sur", "América Latina",
         "Centroamérica", "Regional", "Global",
     ],
@@ -290,6 +294,27 @@ def save_df(df: pd.DataFrame) -> None:
         "Estado", "Monto estimado (USD)", "Consultor", "Observaciones",
     ]
     df[[c for c in export_cols if c in df.columns]].to_csv(CSV_PATH, index=False)
+    st.cache_data.clear()
+
+# ── Socios estratégicos ────────────────────────────────────────────────────────
+
+SOCIOS_COLS = ["Nombre", "Experiencia", "Responsable", "Actividades", "Resultados"]
+
+@st.cache_data(ttl=60)
+def load_socios() -> pd.DataFrame:
+    if not SOCIOS_CSV.exists():
+        return pd.DataFrame(columns=SOCIOS_COLS)
+    df = pd.read_csv(SOCIOS_CSV)
+    df.columns = df.columns.str.strip()
+    for col in SOCIOS_COLS:
+        if col not in df.columns:
+            df[col] = ""
+        else:
+            df[col] = df[col].fillna("")
+    return df
+
+def save_socios(df: pd.DataFrame) -> None:
+    df[SOCIOS_COLS].to_csv(SOCIOS_CSV, index=False)
     st.cache_data.clear()
 
 # ── PDF ───────────────────────────────────────────────────────────────────────
@@ -829,6 +854,34 @@ st.markdown(f"""
     .metric-pill {{ flex: 1 1 48%; }}
   }}
 
+  /* ── Socios Estratégicos ── */
+  .socio-card {{
+    background: {WHITE}; border-radius: 14px;
+    border: 1px solid {BORDER_LIGHT}; border-left: 5px solid {GREEN_MID};
+    padding: 1rem 1.3rem 0.85rem; margin-bottom: 0.55rem;
+    box-shadow: 0 1px 5px rgba(26,61,46,0.07);
+    transition: box-shadow 0.2s ease;
+  }}
+  .socio-card:hover {{ box-shadow: 0 4px 14px rgba(26,61,46,0.12); }}
+  .socio-name {{
+    font-size: 1.05rem; font-weight: 700; color: {GREEN_DARK};
+    margin-bottom: 0.3rem;
+  }}
+  .socio-tag {{
+    display: inline-block; background: {BG_SAGE}; color: {GREEN_DARK};
+    border: 1px solid {BORDER_LIGHT}; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 600; padding: 2px 10px;
+    margin-right: 0.4rem; margin-bottom: 0.25rem;
+  }}
+  .socio-field-label {{
+    font-size: 0.69rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: {GREEN_MID}; margin-top: 0.5rem;
+    margin-bottom: 0.15rem;
+  }}
+  .socio-field-val {{
+    font-size: 0.83rem; color: {TEXT_BODY}; line-height: 1.45;
+  }}
+
   .mobile-hint {{ display: none; }}
   @media (max-width: 768px) {{
     .mobile-hint {{
@@ -1045,7 +1098,7 @@ st.markdown(f"""
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 
-tab1, tab2, tab3 = st.tabs(["📋  Oportunidades", "📊  Cartera", "✏️  Editar datos"])
+tab1, tab2, tab3, tab4 = st.tabs(["📋  Oportunidades", "📊  Cartera", "✏️  Editar datos", "🤝  Socios Estratégicos"])
 
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 1 — OPORTUNIDADES
@@ -1410,3 +1463,145 @@ with tab3:
             mime="text/csv",
             use_container_width=True,
         )
+
+# ════════════════════════════════════════════════════════════════════════════
+# TAB 4 — SOCIOS ESTRATÉGICOS
+# ════════════════════════════════════════════════════════════════════════════
+
+with tab4:
+    df_socios = load_socios()
+
+    # ── Header ───────────────────────────────────────────────────────────────
+    sc_total = len(df_socios)
+    sc_responsables = df_socios["Responsable"].nunique() if sc_total > 0 else 0
+
+    st.markdown(f"""
+<div style="background:{GREEN_DARK};border-radius:14px;padding:1.1rem 1.6rem;margin-bottom:1.2rem;
+     display:flex;flex-wrap:wrap;gap:1.2rem 2.5rem;align-items:center;">
+  <div>
+    <div style="color:rgba(255,255,255,0.55);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">Socios registrados</div>
+    <div style="color:{WHITE};font-size:2rem;font-weight:700;line-height:1.1;">{sc_total}</div>
+  </div>
+  <div>
+    <div style="color:rgba(255,255,255,0.55);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">Responsables activos</div>
+    <div style="color:#4CAF82;font-size:2rem;font-weight:700;line-height:1.1;">{sc_responsables}</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    # ── Listado de socios ─────────────────────────────────────────────────────
+    st.markdown('<div class="section-header">Red de socios</div>', unsafe_allow_html=True)
+
+    if df_socios.empty:
+        st.markdown("""
+<div class="empty-state">
+  <div class="icon">🤝</div>
+  <p>Aún no hay socios estratégicos registrados. Usá el formulario de abajo para agregar el primero.</p>
+</div>""", unsafe_allow_html=True)
+    else:
+        for idx, row in df_socios.iterrows():
+            nombre      = str(row.get("Nombre",      "") or "Sin nombre")
+            experiencia = str(row.get("Experiencia", "") or "")
+            responsable = str(row.get("Responsable", "—") or "—")
+            actividades = str(row.get("Actividades", "") or "")
+            resultados  = str(row.get("Resultados",  "") or "")
+
+            exp_preview = (experiencia[:120] + "…") if len(experiencia) > 120 else experiencia
+
+            st.markdown(f"""
+<div class="socio-card">
+  <div class="socio-name">🤝 {esc(nombre)}</div>
+  <span class="socio-tag">👤 {esc(responsable)}</span>
+  <div class="socio-field-label">Área de experiencia y aporte a CEO</div>
+  <div class="socio-field-val">{esc(exp_preview)}</div>
+</div>
+""", unsafe_allow_html=True)
+
+            with st.expander(f"Ver detalle completo y editar — {nombre}"):
+                ef1, ef2 = st.columns([3, 1])
+                with ef1:
+                    e_nombre = st.text_input(
+                        "Nombre del socio", value=nombre, key=f"sn_{idx}")
+                    e_exp = st.text_area(
+                        "Área de experiencia y aporte a CEO",
+                        value=experiencia, key=f"se_{idx}", height=90)
+                    e_act = st.text_area(
+                        "Actividades desarrolladas",
+                        value=actividades, key=f"sa_{idx}", height=90)
+                    e_res = st.text_area(
+                        "Resultados esperados de su incorporación",
+                        value=resultados, key=f"sr_{idx}", height=90)
+                with ef2:
+                    resp_idx = CONSULTORES.index(responsable) if responsable in CONSULTORES else 0
+                    e_resp = st.selectbox(
+                        "Responsable del contacto", CONSULTORES,
+                        index=resp_idx, key=f"srp_{idx}")
+                    st.write("")
+                    if st.button("💾 Guardar cambios", key=f"ssave_{idx}",
+                                 type="primary", use_container_width=True):
+                        df_socios.at[idx, "Nombre"]      = e_nombre.strip()
+                        df_socios.at[idx, "Experiencia"] = e_exp.strip()
+                        df_socios.at[idx, "Actividades"] = e_act.strip()
+                        df_socios.at[idx, "Resultados"]  = e_res.strip()
+                        df_socios.at[idx, "Responsable"] = e_resp
+                        save_socios(df_socios)
+                        st.success("¡Cambios guardados!")
+                        st.rerun()
+                    st.write("")
+                    if st.button("🗑 Eliminar socio", key=f"sdel_{idx}",
+                                 use_container_width=True):
+                        df_socios = df_socios.drop(index=idx).reset_index(drop=True)
+                        save_socios(df_socios)
+                        st.rerun()
+
+    # ── Formulario de alta ────────────────────────────────────────────────────
+    st.divider()
+    st.markdown('<div class="section-header">➕ Agregar nuevo socio estratégico</div>',
+                unsafe_allow_html=True)
+
+    with st.form("form_nuevo_socio", clear_on_submit=True):
+        nf1, nf2 = st.columns([3, 1])
+        with nf1:
+            ns_nombre = st.text_input(
+                "Nombre del socio *",
+                placeholder="Nombre completo de la persona u organización")
+            ns_exp = st.text_area(
+                "Área de experiencia y aporte a CEO *",
+                placeholder="Describe la especialización y cómo agrega valor al equipo CEO…",
+                height=95)
+            ns_act = st.text_area(
+                "Actividades desarrolladas",
+                placeholder="Reuniones realizadas, presentaciones, proyectos colaborados, talleres…",
+                height=85)
+            ns_res = st.text_area(
+                "Resultados esperados de su incorporación",
+                placeholder="Contratos posibles, alianzas estratégicas, conocimiento compartido…",
+                height=85)
+        with nf2:
+            ns_resp = st.selectbox("Responsable del contacto", CONSULTORES, index=0)
+            st.write("")
+            st.markdown(
+                "<div style='font-size:0.75rem;color:#666;'>* Campos obligatorios</div>",
+                unsafe_allow_html=True)
+
+        ns_submitted = st.form_submit_button(
+            "✅ Agregar socio estratégico", type="primary", use_container_width=True)
+
+    if ns_submitted:
+        if not ns_nombre.strip():
+            st.error("El campo **Nombre del socio** es obligatorio.")
+        elif not ns_exp.strip():
+            st.error("El campo **Área de experiencia** es obligatorio.")
+        else:
+            nuevo_socio = {
+                "Nombre":      ns_nombre.strip(),
+                "Experiencia": ns_exp.strip(),
+                "Responsable": ns_resp,
+                "Actividades": ns_act.strip(),
+                "Resultados":  ns_res.strip(),
+            }
+            df_socios_upd = pd.concat(
+                [df_socios, pd.DataFrame([nuevo_socio])], ignore_index=True)
+            save_socios(df_socios_upd)
+            st.success(f"✅ **{ns_nombre.strip()}** agregado como socio estratégico.")
+            st.rerun()

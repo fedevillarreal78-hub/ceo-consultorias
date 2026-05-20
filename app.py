@@ -398,8 +398,9 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
                 return
 
             if col_w is None:
-                col_w = [5, 82, 38, 25, 22, 30, 27, 38]
-            headers = ["#", "Título", "Organización", "País", "Fecha límite", "Monto USD", "Estado", "Consultor"]
+                # Suma = 277mm (ancho útil A4 landscape con márgenes 10mm c/lado)
+                col_w = [5, 60, 33, 20, 20, 25, 22, 32, 60]
+            headers = ["#", "Título", "Organización", "País", "Fecha", "Monto USD", "Estado", "Consultor", "Observaciones"]
 
             # Header row
             self.set_fill_color(RD, GD, BD)
@@ -413,15 +414,17 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
             for i, (_, row) in enumerate(df_t.iterrows(), 1):
                 monto = float(row.get("Monto estimado (USD)", 0) or 0)
                 monto_s = f"${monto:,.0f}" if monto > 0 else "-"
+                obs_s = safe(str(row.get("Observaciones", "") or ""), 38)
                 vals = [
                     str(i),
-                    safe(row.get("Título", "—"), 55),
-                    safe(row.get("Organización", "—"), 25),
-                    safe(row.get("País", "—"), 16),
-                    safe(row.get("Fecha límite", "—"), 14),
+                    safe(row.get("Título", "—"), 38),
+                    safe(row.get("Organización", "—"), 20),
+                    safe(row.get("País", "—"), 12),
+                    safe(row.get("Fecha límite", "—"), 12),
                     monto_s,
-                    safe(row.get("Estado", "—"), 17),
-                    safe(row.get("Consultor", "—"), 24),
+                    safe(row.get("Estado", "—"), 14),
+                    safe(row.get("Consultor", "—"), 20),
+                    obs_s,
                 ]
                 self.set_fill_color(RS, GS, BS) if alt else self.set_fill_color(255, 255, 255)
                 self.set_text_color(30, 30, 30)
@@ -1470,7 +1473,8 @@ if nav_page == "📋  Oportunidades":
 
         st.divider()
         export_cols = ["Título", "Organización", "Tipo", "Región", "País", "Fecha límite",
-                       "Enlace", "Afinidad", "Prioridad", "Estado", "Monto estimado (USD)", "Consultor"]
+                       "Enlace", "Afinidad", "Prioridad", "Estado", "Monto estimado (USD)",
+                       "Consultor", "Socio vinculado", "Observaciones"]
         export_df = df[[c for c in export_cols if c in df.columns]]
         st.download_button(
             "⬇️ Descargar resultados filtrados (CSV)",

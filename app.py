@@ -696,7 +696,7 @@ st.markdown(f"""
     display: flex; flex-direction: column; gap: 3px;
     padding: 0.3rem 0;
   }}
-  section[data-testid="stSidebar"] .stRadio div[data-testid="stMarkdownContainer"] {{
+  section[data-testid="stSidebar"] .stRadio > div > div[data-testid="stMarkdownContainer"] {{
     display: none;
   }}
   section[data-testid="stSidebar"] [data-baseweb="radio"] {{

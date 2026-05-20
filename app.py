@@ -953,6 +953,12 @@ st.markdown(f"""
   .opp-meta span {{ display: flex; align-items: center; gap: 0.22rem; }}
   .opp-meta .monto-meta {{ color: #0D47A1; font-weight: 600; }}
   .opp-chips {{ display: flex; flex-wrap: wrap; gap: 0.28rem; align-items: center; }}
+  .opp-obs {{
+    margin-top: 0.45rem; padding: 0.3rem 0.55rem;
+    background: #F9FBF9; border-left: 3px solid {GREEN_ACCENT};
+    border-radius: 0 6px 6px 0; font-size: 0.76rem; color: {TEXT_BODY};
+    line-height: 1.4;
+  }}
   .chip {{
     display: inline-block; padding: 2px 9px; border-radius: 20px;
     font-size: 0.71rem; font-weight: 600; letter-spacing: 0.02em;
@@ -1391,6 +1397,7 @@ if nav_page == "📋  Oportunidades":
             afin      = row.get("Afinidad", "—")
             consultor = row.get("Consultor", "—")
             monto     = float(row.get("Monto estimado (USD)", 0) or 0)
+            obs_val   = str(row.get("Observaciones", "") or "")
 
             descartada = (estado == "Descartada")
             title_cls  = "opp-title-descartada" if descartada else "opp-title"
@@ -1400,8 +1407,8 @@ if nav_page == "📋  Oportunidades":
             pais_chip      = f'<span class="chip chip-mid">📍 {esc(pais)}</span>' if pais and pais != "—" else ""
             monto_chip     = f'<span class="chip chip-monto">💰 ${monto:,.0f} USD</span>' if monto > 0 else ""
             consultor_chip = f'<span class="chip chip-mid">👤 {esc(consultor)}</span>' if consultor and consultor != "—" else ""
-            # Monto en meta (siempre visible)
-            monto_meta = f'<span class="monto-meta">💵 ${monto:,.0f} USD</span>' if monto > 0 else '<span style="color:#aaa;">💵 Monto: —</span>'
+            monto_meta     = f'<span class="monto-meta">💵 ${monto:,.0f} USD</span>' if monto > 0 else '<span style="color:#aaa;">💵 Monto: —</span>'
+            obs_html       = f'<div class="opp-obs">📝 {esc(obs_val)}</div>' if obs_val else ""
 
             st.markdown(f"""
 <div class="opp-card" style="border-left-color:{pconf['border']}; background:{pconf['bg']}08;">
@@ -1418,10 +1425,11 @@ if nav_page == "📋  Oportunidades":
     <span class="chip" style="background:{econf['bg']};color:{econf['color']};">{esc(estado)}</span>
     {pais_chip}{monto_chip}{consultor_chip}{link_chip}
   </div>
+  {obs_html}
 </div>
 """, unsafe_allow_html=True)
 
-            # Edición inline
+            # Edición inline — Estado y Consultor
             ec1, ec2, ec3 = st.columns([3, 3, 2])
             with ec1:
                 cur_est = ESTADOS_ORDEN.index(estado) if estado in ESTADOS_ORDEN else 0
@@ -1436,6 +1444,27 @@ if nav_page == "📋  Oportunidades":
                     if st.button("💾 Guardar", key=f"save_{orig_idx}", type="primary"):
                         df_all_editable.at[orig_idx, "Estado"]    = new_estado
                         df_all_editable.at[orig_idx, "Consultor"] = new_consultor
+                        save_df(df_all_editable)
+                        st.rerun()
+
+            # Observaciones — área de texto editable (máx 200 caracteres)
+            col_obs, col_obs_save = st.columns([7, 1])
+            with col_obs:
+                obs_new = st.text_area(
+                    "Observaciones",
+                    value=obs_val,
+                    max_chars=200,
+                    key=f"obs_{orig_idx}",
+                    placeholder="Agregar observación interna (máx. 200 caracteres)…",
+                    label_visibility="collapsed",
+                    height=58,
+                )
+            with col_obs_save:
+                st.write("")
+                st.write("")
+                if obs_new != obs_val:
+                    if st.button("💾", key=f"sobs_{orig_idx}", help="Guardar observación"):
+                        df_all_editable.at[orig_idx, "Observaciones"] = obs_new
                         save_df(df_all_editable)
                         st.rerun()
 

@@ -803,10 +803,38 @@ st.markdown(f"""
     padding: 8px 6px !important;
   }}
 
+  /* Pipeline CEO — bloque destacado en sidebar */
+  .pipeline-btn {{
+    display: block; width: 100%;
+    background: linear-gradient(135deg, #1B6B3A 0%, #2E8B57 100%);
+    border: 1px solid rgba(76,175,130,0.5);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    text-decoration: none !important;
+  }}
+  .pipeline-btn:hover {{
+    background: linear-gradient(135deg, #2E8B57 0%, #3DAA6E 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76,175,130,0.35);
+  }}
+  .pipeline-btn-label {{
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: rgba(255,255,255,0.55) !important;
+    margin-bottom: 3px;
+  }}
+  .pipeline-btn-title {{
+    font-size: 0.95rem; font-weight: 700;
+    color: #FFFFFF !important;
+    letter-spacing: 0.01em;
+  }}
+
   /* Divider */
   section[data-testid="stSidebar"] hr {{ border-color: rgba(255,255,255,0.12) !important; }}
 
-  /* Botones sidebar */
+  /* Botones sidebar — general */
   section[data-testid="stSidebar"] .stButton button {{
     background: {GREEN_ACCENT} !important; color: {WHITE} !important;
     border: none !important; border-radius: 20px !important;
@@ -817,6 +845,21 @@ st.markdown(f"""
   }}
   section[data-testid="stSidebar"] .stButton button:hover {{
     background: {GREEN_LIGHT} !important; transform: translateY(-1px);
+  }}
+  /* Pipeline CEO — primer botón del sidebar, estilo destacado */
+  section[data-testid="stSidebar"] .stButton:first-of-type button {{
+    background: linear-gradient(135deg,#1B6B3A 0%,#2E8B57 100%) !important;
+    border: 1px solid rgba(76,175,130,0.55) !important;
+    border-radius: 14px !important;
+    font-size: 0.97rem !important; font-weight: 700 !important;
+    padding: 0.7rem 1rem !important;
+    letter-spacing: 0.015em;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  }}
+  section[data-testid="stSidebar"] .stButton:first-of-type button:hover {{
+    background: linear-gradient(135deg,#2E8B57 0%,#3DAA6E 100%) !important;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.35);
+    transform: translateY(-1px);
   }}
 
   /* Text input buscar */
@@ -1048,6 +1091,18 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
+    # ── Pipeline CEO — sección destacada ──────────────────────────────────
+    if st.button(
+        "📊  Pipeline CEO",
+        key="btn_pipeline",
+        use_container_width=True,
+        help="Ver el pipeline de oportunidades gestionadas",
+    ):
+        st.session_state["nav_page"] = "📊  Pipeline CEO"
+        st.rerun()
+
+    st.divider()
+
     # ── Navegación principal ───────────────────────────────────────────────
     st.markdown(
         "<div style='font-size:0.68rem;font-weight:700;text-transform:uppercase;"
@@ -1059,7 +1114,6 @@ with st.sidebar:
         "nav",
         options=[
             "📋  Oportunidades",
-            "📊  Cartera",
             "📥  Carga manual de oportunidades",
             "🤝  Socios Estratégicos",
         ],
@@ -1397,7 +1451,7 @@ if nav_page == "📋  Oportunidades":
 # TAB 2 — CARTERA
 # ════════════════════════════════════════════════════════════════════════════
 
-elif nav_page == "📊  Cartera":
+elif nav_page == "📊  Pipeline CEO":
     df_c = load_data()
 
     total_c    = len(df_c)

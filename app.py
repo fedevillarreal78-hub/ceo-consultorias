@@ -1098,7 +1098,7 @@ with st.sidebar:
         use_container_width=True,
         help="Ver el pipeline de oportunidades gestionadas",
     ):
-        st.session_state["nav_page"] = "📊  Pipeline CEO"
+        st.session_state["_show_pipeline"] = True
         st.rerun()
 
     st.divider()
@@ -1110,7 +1110,7 @@ with st.sidebar:
         "Navegación</div>",
         unsafe_allow_html=True,
     )
-    nav_page = st.radio(
+    _radio_val = st.radio(
         "nav",
         options=[
             "📋  Oportunidades",
@@ -1120,6 +1120,14 @@ with st.sidebar:
         label_visibility="collapsed",
         key="nav_page",
     )
+    # Si el usuario elige algo en el radio, salir del modo Pipeline
+    if "_show_pipeline" in st.session_state and st.session_state["_show_pipeline"]:
+        if st.session_state.get("_prev_radio") != _radio_val:
+            st.session_state["_show_pipeline"] = False
+    st.session_state["_prev_radio"] = _radio_val
+
+    # Página activa final
+    nav_page = "📊  Pipeline CEO" if st.session_state.get("_show_pipeline") else _radio_val
 
     st.divider()
 

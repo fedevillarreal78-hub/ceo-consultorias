@@ -258,6 +258,11 @@ def load_data() -> pd.DataFrame:
     else:
         df["Observaciones"] = df["Observaciones"].fillna("")
 
+    if "Socio vinculado" not in df.columns:
+        df["Socio vinculado"] = ""
+    else:
+        df["Socio vinculado"] = df["Socio vinculado"].fillna("")
+
     if "Monto estimado (USD)" not in df.columns:
         df["Monto estimado (USD)"] = 0.0
     else:
@@ -303,6 +308,7 @@ def save_df(df: pd.DataFrame) -> None:
         "Título", "Organización", "Tipo", "Región", "País",
         "Fecha límite", "Enlace", "Afinidad", "Prioridad",
         "Estado", "Monto estimado (USD)", "Consultor", "Observaciones",
+        "Socio vinculado",
     ]
     df[[c for c in export_cols if c in df.columns]].to_csv(CSV_PATH, index=False)
     st.cache_data.clear()
@@ -433,7 +439,7 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
                 self.cell(0, 7, "  Sin socios estrategicos registrados.", ln=True)
                 return
             headers = ["Nombre", "Area de experiencia", "Responsable", "Actividades", "Resultados"]
-            col_w   = [45, 72, 38, 68, 74]
+            col_w   = [40, 65, 33, 65, 74]
             self.set_fill_color(RD, GD, BD)
             self.set_text_color(255, 255, 255)
             self.set_font("Helvetica", "B", 7)
@@ -616,7 +622,7 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
         pipe_c = sub_c["Monto estimado (USD)"].sum()
         pipe_s = f" | Pipeline: ${pipe_c:,.0f}" if pipe_c > 0 else ""
         pdf.cell(0, 7, safe(f"  {nombre_c}  ({len(sub_c)} oportunidades{pipe_s})"), ln=True)
-        col_wo = [95, 28, 22, 152]
+        col_wo = [80, 28, 22, 147]
         heads  = ["Titulo", "Estado", "Prioridad", "Observaciones"]
         pdf.set_fill_color(RD, GD, BD)
         pdf.set_text_color(255, 255, 255)
@@ -682,6 +688,9 @@ st.markdown(f"""
   /* ── Navegación lateral ── */
   section[data-testid="stSidebar"] .stRadio > label {{
     display: none;
+  }}
+  section[data-testid="stSidebar"] [role="radiogroup"] [data-baseweb="radio"]:nth-child(2) {{
+    display: none !important;
   }}
   section[data-testid="stSidebar"] .stRadio [role="radiogroup"] {{
     display: flex; flex-direction: column; gap: 3px;
@@ -1089,7 +1098,7 @@ with st.sidebar:
         use_container_width=True,
         help="Ver el pipeline de oportunidades gestionadas",
     ):
-        st.session_state["_show_pipeline"] = True
+        st.session_state["nav_page"] = "📊  Pipeline CEO"
         st.rerun()
 
     st.divider()
@@ -1105,20 +1114,15 @@ with st.sidebar:
         "nav",
         options=[
             "📋  Oportunidades",
+            "📊  Pipeline CEO",
             "📥  Carga manual de oportunidades",
             "🤝  Socios Estratégicos",
         ],
         label_visibility="collapsed",
         key="nav_page",
     )
-    # Si el usuario elige algo en el radio, salir del modo Pipeline
-    if "_show_pipeline" in st.session_state and st.session_state["_show_pipeline"]:
-        if st.session_state.get("_prev_radio") != _radio_val:
-            st.session_state["_show_pipeline"] = False
-    st.session_state["_prev_radio"] = _radio_val
 
-    # Página activa final
-    nav_page = "📊  Pipeline CEO" if st.session_state.get("_show_pipeline") else _radio_val
+    nav_page = _radio_val
 
     st.divider()
 
@@ -1485,13 +1489,15 @@ elif nav_page == "📊  Pipeline CEO":
     c_pdf1, c_pdf2 = st.columns([2, 3])
     with c_pdf1:
         if st.button("📄 Generar informe PDF", type="primary", use_container_width=True):
+            st.session_state.pop("pdf_bytes", None)  # limpiar PDF previo
             with st.spinner("Generando informe PDF…"):
                 try:
                     pdf_bytes = generar_pdf(df_c, load_socios(), hoy)
                     st.session_state["pdf_bytes"] = pdf_bytes
-                    st.success("Informe generado. Hacé clic en Descargar.")
+                    st.success("✅ Informe generado. Hacé clic en Descargar.")
                 except Exception as e:
-                    st.error(f"Error al generar PDF: {e}")
+                    import traceback
+                    st.error(f"Error al generar PDF: {e}\n\n{traceback.format_exc()}")
     with c_pdf2:
         if "pdf_bytes" in st.session_state:
             st.download_button(
@@ -1601,6 +1607,8 @@ elif nav_page == "📊  Pipeline CEO":
                     cp2  = {"Alta": "chip-alta", "Media": "chip-media", "Baja": "chip-baja"}.get(r.get("Prioridad", "Media"), "chip-mid")
                     mo2  = float(r.get("Monto estimado (USD)", 0) or 0)
                     mo2s = f'<span class="chip chip-monto">💰 ${mo2:,.0f} USD</span>' if mo2 > 0 else ""
+                    sv_val = str(r.get("Socio vinculado", "") or "")
+                    sv_chip = f'<span class="chip chip-mid">🤝 {esc(sv_val)}</span>' if sv_val and sv_val != "—" else ""
                     st.markdown(f"""
 <div class="opp-card" style="border-left-color:{pc2['border']};background:{pc2['bg']}08;margin-bottom:0.3rem;">
   <div class="opp-title">{esc(r.get('Título',''))}</div>
@@ -1611,10 +1619,29 @@ elif nav_page == "📊  Pipeline CEO":
   <div class="opp-chips">
     <span class="chip {cp2}">{pc2['badge']} {esc(r.get('Prioridad',''))}</span>
     <span class="chip" style="background:{ec2['bg']};color:{ec2['color']};">{esc(r.get('Estado',''))}</span>
-    {mo2s}{lk2}
+    {mo2s}{sv_chip}{lk2}
   </div>
 </div>
 """, unsafe_allow_html=True)
+                    # Socio vinculado
+                    _socios_nombres = ["—"] + load_socios()["Nombre"].tolist()
+                    _sv_actual = str(r.get("Socio vinculado", "") or "—")
+                    _sv_idx = _socios_nombres.index(_sv_actual) if _sv_actual in _socios_nombres else 0
+                    col_sv, col_sv_save = st.columns([4, 1])
+                    with col_sv:
+                        sv_new = st.selectbox(
+                            "Socio vinculado",
+                            _socios_nombres,
+                            index=_sv_idx,
+                            key=f"sv_{idx2}",
+                            label_visibility="collapsed",
+                        )
+                    with col_sv_save:
+                        if sv_new != _sv_actual:
+                            if st.button("💾", key=f"ssv_{idx2}", help="Guardar socio vinculado"):
+                                df_c.at[idx2, "Socio vinculado"] = sv_new if sv_new != "—" else ""
+                                save_df(df_c)
+                                st.rerun()
                     obs_val = str(r.get("Observaciones", "") or "")
                     col_obs, col_save_obs = st.columns([5, 1])
                     with col_obs:

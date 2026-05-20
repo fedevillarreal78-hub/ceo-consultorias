@@ -53,6 +53,14 @@ ESTADO_CHIPS = {
 }
 ESTADOS_ORDEN = ["Identificada", "En análisis", "Postulada", "Ganada", "Descartada"]
 
+# Perfiles de afinidad
+AFINIDAD_OPCIONES = [
+    "ICyT, Productividad y Desarrollo",
+    "Comercio y Geopolítica",
+    "Empresarial",
+    "Ambos",
+]
+
 # Regiones agrupadas (filtro del sidebar)
 REGIONES_GRUPO = ["Cono Sur", "América Latina", "Caribe", "Europa", "Otros"]
 
@@ -258,6 +266,9 @@ def load_data() -> pd.DataFrame:
                 .str.replace(",", "").str.replace("$", "").str.strip(),
             errors="coerce",
         ).fillna(0.0)
+
+    # Migrar afinidad legacy "Individual" al nuevo perfil
+    df["Afinidad"] = df["Afinidad"].replace("Individual", "ICyT, Productividad y Desarrollo")
 
     # Región agrupada para filtro
     df["_region_grupo"] = df["Región"].apply(agrupar_region)
@@ -677,6 +688,37 @@ st.markdown(f"""
   }}
   section[data-testid="stSidebar"] * {{ color: {WHITE} !important; }}
 
+  /* ── Navegación lateral ── */
+  section[data-testid="stSidebar"] .stRadio > label {{
+    display: none;
+  }}
+  section[data-testid="stSidebar"] .stRadio [role="radiogroup"] {{
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 0.3rem 0;
+  }}
+  section[data-testid="stSidebar"] .stRadio div[data-testid="stMarkdownContainer"] {{
+    display: none;
+  }}
+  section[data-testid="stSidebar"] [data-baseweb="radio"] {{
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px; padding: 7px 12px !important;
+    transition: background 0.15s ease; cursor: pointer;
+    margin: 1px 0 !important;
+  }}
+  section[data-testid="stSidebar"] [data-baseweb="radio"]:hover {{
+    background: rgba(255,255,255,0.12) !important;
+  }}
+  section[data-testid="stSidebar"] [data-baseweb="radio"] [aria-checked="true"],
+  section[data-testid="stSidebar"] [data-baseweb="radio"]:has([aria-checked="true"]) {{
+    background: rgba(76,175,130,0.28) !important;
+    border-left: 3px solid {GREEN_ACCENT} !important;
+  }}
+  section[data-testid="stSidebar"] [data-baseweb="radio"] label {{
+    font-size: 0.88rem !important; font-weight: 500 !important;
+    letter-spacing: 0.01em; cursor: pointer;
+    color: {WHITE} !important;
+  }}
+
   /* Inputs y multiselects — fondo claro, texto negro legible */
   section[data-testid="stSidebar"] .stTextInput input,
   section[data-testid="stSidebar"] .stMultiSelect div[data-baseweb="select"] {{
@@ -978,17 +1020,124 @@ st.markdown(f"""
 with st.sidebar:
     if LOGO_B64:
         st.markdown(
-            f"<div style='padding:0.5rem 0 1.2rem'>"
+            f"<div style='padding:0.5rem 0 0.8rem'>"
             f"<img src='data:image/png;base64,{LOGO_B64}' "
             f"style='height:42px;filter:brightness(0) invert(1);'>"
             f"</div>",
             unsafe_allow_html=True,
         )
 
-    # ── Actualizar datos (arriba) ──────────────────────────────────────────
+    # ── Navegación principal ───────────────────────────────────────────────
     st.markdown(
         "<div style='font-size:0.68rem;font-weight:700;text-transform:uppercase;"
-        "letter-spacing:0.1em;color:rgba(255,255,255,0.45);padding-bottom:0.4rem;'>"
+        "letter-spacing:0.1em;color:rgba(255,255,255,0.45);padding-bottom:0.3rem;'>"
+        "Navegación</div>",
+        unsafe_allow_html=True,
+    )
+    nav_page = st.radio(
+        "nav",
+        options=[
+            "📋  Oportunidades",
+            "📊  Cartera",
+            "📥  Carga manual",
+            "🤝  Socios Estratégicos",
+        ],
+        label_visibility="collapsed",
+        key="nav_page",
+    )
+
+    st.divider()
+
+    # ── Filtros (solo visibles en Oportunidades) ───────────────────────────
+    if nav_page == "📋  Oportunidades":
+        st.markdown(
+            "<div style='font-size:0.68rem;font-weight:700;text-transform:uppercase;"
+            "letter-spacing:0.1em;color:rgba(255,255,255,0.45);padding-bottom:0.3rem;'>"
+            "Filtros</div>",
+            unsafe_allow_html=True,
+        )
+
+        df_full = load_data()
+
+        with st.expander("🎯 Prioridad", expanded=False):
+            prioridad_sel = st.multiselect(
+                "Prioridad", ["Alta", "Media", "Baja"],
+                default=["Alta", "Media", "Baja"],
+                label_visibility="collapsed",
+            )
+
+        with st.expander("🔄 Estado", expanded=False):
+            estado_sel = st.multiselect(
+                "Estado", ESTADOS_ORDEN,
+                default=[e for e in ESTADOS_ORDEN if e != "Descartada"],
+                label_visibility="collapsed",
+            )
+
+        with st.expander("🔬 Perfil / Afinidad", expanded=False):
+            afinidad_sel = st.multiselect(
+                "Afinidad", AFINIDAD_OPCIONES + ["Ambos"],
+                default=AFINIDAD_OPCIONES + ["Ambos"],
+                label_visibility="collapsed",
+            )
+
+        with st.expander("👤 Consultor", expanded=False):
+            consultores_csv  = df_full["Consultor"].dropna().unique().tolist()
+            consultores_opts = sorted(set(CONSULTORES + consultores_csv))
+            consultor_sel    = st.multiselect(
+                "Consultor", consultores_opts,
+                default=consultores_opts,
+                label_visibility="collapsed",
+            )
+
+        with st.expander("🌎 Región y País", expanded=False):
+            if "_prev_region" not in st.session_state:
+                st.session_state["_prev_region"] = list(REGIONES_GRUPO)
+
+            region_sel = st.multiselect(
+                "Región", REGIONES_GRUPO,
+                default=REGIONES_GRUPO,
+                label_visibility="collapsed",
+            )
+
+            if sorted(region_sel) != sorted(st.session_state["_prev_region"]):
+                st.session_state["_prev_region"] = list(region_sel)
+                if set(region_sel) == set(REGIONES_GRUPO):
+                    st.session_state["sb_pais"] = []
+                else:
+                    auto_p: list[str] = []
+                    for rg in region_sel:
+                        auto_p.extend(REGION_TO_PAISES.get(rg, []))
+                    st.session_state["sb_pais"] = sorted(
+                        p for p in set(auto_p) if p in TODOS_PAISES
+                    )
+
+            pais_sel = st.multiselect(
+                "País", TODOS_PAISES,
+                key="sb_pais",
+                placeholder="Todos los países…",
+                label_visibility="collapsed",
+            )
+
+        texto = st.text_input("🔍 Buscar", placeholder="UNDP, cacao, agroecología…")
+
+        st.divider()
+    else:
+        # Valores por defecto cuando no está en la página Oportunidades
+        df_full = load_data()
+        prioridad_sel = ["Alta", "Media", "Baja"]
+        estado_sel    = [e for e in ESTADOS_ORDEN if e != "Descartada"]
+        afinidad_sel  = AFINIDAD_OPCIONES + ["Ambos"]
+        consultores_csv  = df_full["Consultor"].dropna().unique().tolist()
+        consultores_opts = sorted(set(CONSULTORES + consultores_csv))
+        consultor_sel    = consultores_opts
+        region_sel       = list(REGIONES_GRUPO)
+        pais_sel         = []
+        texto            = ""
+
+    # ── Actualizar datos ───────────────────────────────────────────────────
+    st.markdown(
+        "<div style='font-size:0.68rem;font-weight:700;text-transform:uppercase;"
+        "letter-spacing:0.1em;color:rgba(255,255,255,0.45);padding-bottom:0.3rem;'>"
         "Actualizar datos</div>",
         unsafe_allow_html=True,
     )
@@ -1012,7 +1161,10 @@ with st.sidebar:
                 env = os.environ.copy()
                 if tavily_key.strip():
                     env["TAVILY_API_KEY"] = tavily_key.strip()
-                result = subprocess.run([sys.executable, str(SCRIPT_PATH)], capture_output=True, text=True, env=env)
+                result = subprocess.run(
+                    [sys.executable, str(SCRIPT_PATH)],
+                    capture_output=True, text=True, env=env,
+                )
             if result.returncode == 0:
                 st.success("¡Completado!")
                 st.cache_data.clear()
@@ -1020,81 +1172,6 @@ with st.sidebar:
             else:
                 st.error("Error:")
                 st.code((result.stderr or result.stdout)[-1000:])
-
-    st.divider()
-
-    # ── Filtros (abajo, cada uno colapsable) ──────────────────────────────
-    st.markdown(
-        "<div style='font-size:0.68rem;font-weight:700;text-transform:uppercase;"
-        "letter-spacing:0.1em;color:rgba(255,255,255,0.45);padding-bottom:0.4rem;'>"
-        "Filtros</div>",
-        unsafe_allow_html=True,
-    )
-
-    df_full = load_data()
-
-    with st.expander("🎯 Prioridad", expanded=False):
-        prioridad_sel = st.multiselect(
-            "Prioridad", ["Alta", "Media", "Baja"],
-            default=["Alta", "Media", "Baja"],
-            label_visibility="collapsed",
-        )
-
-    with st.expander("🔄 Estado", expanded=False):
-        estado_sel = st.multiselect(
-            "Estado", ESTADOS_ORDEN,
-            default=[e for e in ESTADOS_ORDEN if e != "Descartada"],
-            label_visibility="collapsed",
-        )
-
-    with st.expander("🤝 Afinidad", expanded=False):
-        afinidad_sel = st.multiselect(
-            "Afinidad", ["Individual", "Empresarial", "Ambos"],
-            default=["Individual", "Empresarial", "Ambos"],
-            label_visibility="collapsed",
-        )
-
-    with st.expander("👤 Consultor", expanded=False):
-        consultores_csv  = df_full["Consultor"].dropna().unique().tolist()
-        consultores_opts = sorted(set(CONSULTORES + consultores_csv))
-        consultor_sel    = st.multiselect(
-            "Consultor", consultores_opts,
-            default=consultores_opts,
-            label_visibility="collapsed",
-        )
-
-    with st.expander("🌎 Región", expanded=False):
-        # Regiones agrupadas — al cambiar, auto-popula el filtro País
-        if "_prev_region" not in st.session_state:
-            st.session_state["_prev_region"] = list(REGIONES_GRUPO)
-
-        region_sel = st.multiselect(
-            "Región", REGIONES_GRUPO,
-            default=REGIONES_GRUPO,
-            label_visibility="collapsed",
-        )
-
-        # Detectar cambio de región → actualizar país antes de renderizar el widget
-        if sorted(region_sel) != sorted(st.session_state["_prev_region"]):
-            st.session_state["_prev_region"] = list(region_sel)
-            if set(region_sel) == set(REGIONES_GRUPO):
-                st.session_state["sb_pais"] = []
-            else:
-                auto_p: list[str] = []
-                for rg in region_sel:
-                    auto_p.extend(REGION_TO_PAISES.get(rg, []))
-                st.session_state["sb_pais"] = sorted(
-                    p for p in set(auto_p) if p in TODOS_PAISES
-                )
-
-        pais_sel = st.multiselect(
-            "País", TODOS_PAISES,
-            key="sb_pais",
-            placeholder="Todos los países…",
-            label_visibility="collapsed",
-        )
-
-    texto = st.text_input("🔍 Buscar", placeholder="UNDP, cacao, agroecología…")
 
     st.divider()
     st.markdown(
@@ -1146,7 +1223,7 @@ st.markdown(f"""
   <div class="ceo-hero-logo">{logo_html}</div>
   <div class="ceo-hero-text">
     <h1>Oportunidades de Consultoría</h1>
-    <p>Monitoreo de convocatorias · Perfiles Individual &amp; Empresarial · ALC &amp; Global</p>
+    <p>Monitoreo de convocatorias · Perfiles ICyT, Comercio &amp; CEO · ALC &amp; Global</p>
   </div>
   <div class="ceo-hero-dates">
     <div class="ceo-hero-date">📅 {hoy.strftime('%d %b %Y')}</div>
@@ -1172,7 +1249,8 @@ if days_old > 7:
 
 total        = len(df)
 n_alta       = len(df[df["Prioridad"] == "Alta"])
-n_ind        = len(df[df["Afinidad"].isin(["Individual", "Ambos"])])
+n_icyt       = len(df[df["Afinidad"].isin(["ICyT, Productividad y Desarrollo", "Ambos"])])
+n_comercio   = len(df[df["Afinidad"].isin(["Comercio y Geopolítica", "Ambos"])])
 n_empresa    = len(df[df["Afinidad"].isin(["Empresarial", "Ambos"])])
 pipeline     = df["Monto estimado (USD)"].sum()
 pipeline_fmt = f"${pipeline:,.0f}" if pipeline > 0 else "—"
@@ -1188,8 +1266,12 @@ st.markdown(f"""
     <div class="metric-label">🔴 Prioridad Alta</div>
   </div>
   <div class="metric-pill">
-    <div class="metric-num">{n_ind}</div>
-    <div class="metric-label">👤 Para Individual</div>
+    <div class="metric-num">{n_icyt}</div>
+    <div class="metric-label">🔬 ICyT / Produc.</div>
+  </div>
+  <div class="metric-pill">
+    <div class="metric-num">{n_comercio}</div>
+    <div class="metric-label">🌐 Comercio</div>
   </div>
   <div class="metric-pill">
     <div class="metric-num">{n_empresa}</div>
@@ -1204,13 +1286,13 @@ st.markdown(f"""
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 
-tab1, tab2, tab3, tab4 = st.tabs(["📋  Oportunidades", "📊  Cartera", "📥  Carga manual", "🤝  Socios Estratégicos"])
+# ── Contenido por página ──────────────────────────────────────────────────────
 
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 1 — OPORTUNIDADES
 # ════════════════════════════════════════════════════════════════════════════
 
-with tab1:
+if nav_page == "📋  Oportunidades":
     if df.empty:
         st.markdown("""
         <div class="empty-state">
@@ -1304,7 +1386,7 @@ with tab1:
 # TAB 2 — CARTERA
 # ════════════════════════════════════════════════════════════════════════════
 
-with tab2:
+elif nav_page == "📊  Cartera":
     df_c = load_data()
 
     total_c    = len(df_c)
@@ -1466,7 +1548,7 @@ with tab2:
 # TAB 3 — EDITAR DATOS
 # ════════════════════════════════════════════════════════════════════════════
 
-with tab3:
+elif nav_page == "📥  Carga manual":
     st.markdown("**Editá Estado, Consultor, Monto y País directamente en la tabla.**")
     if _is_cloud:
         st.info("Versión en la nube: guardá los cambios y descargá el CSV para subirlo al repositorio.", icon="ℹ️")
@@ -1490,7 +1572,7 @@ with tab3:
         with ff1:
             f_tipo    = st.selectbox("Tipo", ["Individual", "Servicios", "Licitación", "Otro"])
         with ff2:
-            f_afin    = st.selectbox("Afinidad", ["Individual", "Empresarial", "Ambos"])
+            f_afin    = st.selectbox("Afinidad", AFINIDAD_OPCIONES + ["Ambos"])
         with ff3:
             f_prio    = st.selectbox("Prioridad", ["Alta", "Media", "Baja"], index=1)
         with ff4:
@@ -1574,7 +1656,7 @@ with tab3:
 # TAB 4 — SOCIOS ESTRATÉGICOS
 # ════════════════════════════════════════════════════════════════════════════
 
-with tab4:
+elif nav_page == "🤝  Socios Estratégicos":
     df_socios = load_socios()
 
     # ── Header ───────────────────────────────────────────────────────────────

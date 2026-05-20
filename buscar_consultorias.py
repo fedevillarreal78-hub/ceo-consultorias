@@ -38,13 +38,29 @@ REPORT_PATH = BASE_DIR / "nuevas_esta_semana.txt"
 
 # Palabras del sector — el texto debe contener al menos una
 KEYWORDS = [
+    # Sector agro / alimentario
     "agriculture", "food", "rural", "agrifood", "agro", "bioeconomy",
     "food security", "nutrition", "value chain", "agribusiness",
     "agroforestry", "livestock", "crop", "farm", "harvest",
     "agricultura", "alimentaria", "agroalimentar", "bioeconomía",
     "cadenas de valor", "seguridad alimentaria", "desarrollo rural",
+    # Política y comercio
     "policy", "institutional", "trade", "commerce", "innovation",
     "política", "institucional", "comercio", "innovación", "sostenibilidad",
+    "trade policy", "agricultural policy", "política agrícola",
+    "comercio internacional", "negociación", "negotiation",
+    "política comercial", "mercados agropecuarios",
+    # Econometría / estadística
+    "econometrics", "econometría", "statistical analysis", "análisis estadístico",
+    "impact evaluation", "evaluación de impacto", "value chains",
+    # Bioeconomía / ciencia
+    "bioeconomy", "biotechnology", "innovation system", "technology transfer",
+    "sistema de innovación", "transferencia tecnológica", "agro-tech",
+    # Organismos clave nuevos
+    "CGIAR", "IFPRI", "FONTAGRO", "bioversity", "CIAT",
+    "CAF", "BCIE", "GIZ", "AECID",
+    # Geopolítica regional
+    "cono sur", "argentina", "mercosur", "lac region",
 ]
 
 # Señales que confirman que ES una convocatoria — debe haber al menos una
@@ -209,15 +225,41 @@ def append_to_csv(opportunities: list) -> None:
 
 def classify(title: str, org: str) -> tuple:
     t = (title + " " + org).lower()
-    if any(w in t for w in ["firma", "empresa", "company", "firm", "consortium", "rfp"]):
+
+    # Tipo firma / empresarial
+    if any(w in t for w in ["firma", "empresa", "company", "firm", "consortium", "rfp", "licitación"]):
         tipo = "Firma"
         afinidad = "Empresarial"
-    elif any(w in t for w in ["individual", "ic -", "consultor individual"]):
-        tipo = "Individual"
-        afinidad = "Individual"
+
+    # Consultor individual explícito
+    elif any(w in t for w in ["individual", "ic -", "ic–", "consultor individual", "individual consultant"]):
+        # Determinar cuál perfil individual
+        if any(w in t for w in [
+            "trade", "comercio", "negociaci", "geopolit", "mercado",
+            "política comercial", "econometr", "arancel", "tariff",
+            "market access", "acceso a mercados", "wto", "omc",
+            "bilateral", "multilateral", "acuerdo comercial",
+        ]):
+            tipo = "Individual"
+            afinidad = "Comercio y Geopolítica"
+        else:
+            tipo = "Individual"
+            afinidad = "ICyT, Productividad y Desarrollo"
+
+    # Sin indicación de tipo → clasificar por contenido temático
     else:
-        tipo = "Ambos"
-        afinidad = "Ambos"
+        if any(w in t for w in [
+            "trade policy", "política comercial", "comercio internacional",
+            "negociacion", "negociación", "econometri", "market analysis",
+            "geopolit", "mercados agropecuarios", "acceso mercados",
+            "wto", "omc", "arancel", "tariff", "export", "import",
+        ]):
+            tipo = "Ambos"
+            afinidad = "Comercio y Geopolítica"
+        else:
+            tipo = "Ambos"
+            afinidad = "Ambos"
+
     return tipo, afinidad, "Alta"
 
 
@@ -331,19 +373,39 @@ def get_session() -> requests.Session:
 # ── Scrapers ─────────────────────────────────────────────────────────────────
 
 TAVILY_QUERIES = [
-    # América Latina
+    # ── Perfil ICyT, Productividad y Desarrollo ──────────────────────────
     "consultancy opportunity agriculture Latin America 2025 2026",
     "consultoría agricultura desarrollo rural América Latina 2026",
     "food security consultant UNDP FAO LAC 2026",
     "agrifood policy advisor Latin America Caribbean 2026",
-    # Caribe
     "consultancy Caribbean agriculture food security 2026",
     "consultor Caribe seguridad alimentaria desarrollo rural 2026",
-    # Sedes internacionales en Europa (FAO Roma, FIDA, IFAD, OIT Ginebra, etc.)
     "consultant FAO Rome IFAD WFP headquarters 2026 agriculture",
     "consultancy UNDP Geneva ILO WTO food agriculture policy 2026",
     "consultant European Union Brussels agriculture rural development 2026",
     "consultoría organismos internacionales Europa Roma Ginebra 2026",
+    "CGIAR IFPRI consultant agriculture research 2026",
+    "FONTAGRO convocatoria consultoría 2026",
+    "consultoría innovación tecnológica agropecuaria Argentina Cono Sur 2026",
+    "bioeconomy consultant Latin America 2026 UNDP FAO",
+    # ── Perfil Comercio y Geopolítica ────────────────────────────────────
+    "consultoría política comercial agroalimentaria América Latina 2026",
+    "trade policy agriculture consultant BID Banco Mundial CEPAL 2026",
+    "consultor negociaciones internacionales agropecuarias Cono Sur 2026",
+    "agricultural trade policy advisor Argentina LAC 2026",
+    "consultoría econometría evaluación de impacto políticas agrícolas 2026",
+    "consultor comercio internacional productos agropecuarios BID CAF 2026",
+    "GIZ AECID consultoría desarrollo rural América Latina 2026",
+    "consultor CEPAL FAO política agroalimentaria 2026",
+    "AFD Expertise France consultant agriculture commercio 2026",
+    "USAID USDA agriculture trade policy consultant Latin America 2026",
+    "CAF BCIE consultoría agroindustria comercio Argentina 2026",
+    "Alliance Bioversity CIAT consultant position 2026",
+    "consultoría mercados agropecuarios cadenas de valor Argentina 2026",
+    "IICA consultoría convocatoria política agropecuaria 2026",
+    "World Bank agriculture trade policy consultant 2026",
+    "request for proposal agricultural policy evaluation LAC 2026",
+    "expresión de interés consultoría comercio internacional agropecuario 2026",
 ]
 
 
@@ -383,22 +445,32 @@ def scrape_tavily(api_key: str) -> list:
                     "worldbank.org",
                     "iadb.org",
                     "fontagro.org",
-                    # Sedes europeas — OI con HQ en Europa
-                    "ted.europa.eu",           # TED – licitaciones UE
-                    "ec.europa.eu",            # Comisión Europea
-                    "europeaid.ec.europa.eu",  # EuropeAid / INTPA
-                    "ilo.org",                 # OIT – Ginebra
-                    "who.int",                 # OMS – Ginebra
-                    "wto.org",                 # OMC – Ginebra
-                    "oecd.org",                # OCDE – París
-                    "cabi.org",                # CABI – Londres
-                    "cirad.fr",                # CIRAD – París / agrifood
-                    "ebrd.com",                # BERD – Londres
-                    "eib.org",                 # BEI – Luxemburgo
-                    # USAID y otros
-                    "grants.gov",
+                    "cgiar.org",
+                    "ifpri.org",
+                    "bioversityinternational.org",
+                    "cimmyt.org",
+                    "caf.com",
+                    "bcie.org",
+                    "cepal.org",
+                    "eclac.org",
+                    "iica.int",
+                    # Cooperación bilateral
+                    "giz.de",
+                    "aecid.es",
+                    "afd.fr",
+                    "expertisefrance.fr",
                     "usaid.gov",
+                    "grants.gov",
                     "foreignassistance.gov",
+                    # Sedes europeas — OI con HQ en Europa
+                    "ted.europa.eu",
+                    "ec.europa.eu",
+                    "ilo.org",
+                    "who.int",
+                    "wto.org",
+                    "oecd.org",
+                    "ebrd.com",
+                    "eib.org",
                 ],
             )
 
@@ -442,17 +514,37 @@ def scrape_tavily(api_key: str) -> list:
 def _org_from_url(url: str) -> str:
     """Infiere el nombre de la organización a partir del dominio."""
     mapping = {
-        "undp.org":       "UNDP",
-        "reliefweb.int":  "ReliefWeb",
-        "devex.com":      "Devex",
-        "fao.org":        "FAO",
-        "iadb.org":       "IDB / BID",
-        "ifad.org":       "IFAD / FIDA",
-        "worldbank.org":  "Banco Mundial",
-        "ted.europa.eu":  "UE / EuropeAid",
-        "grants.gov":     "USAID / US Gov",
-        "iica.int":       "IICA",
-        "fontagro.org":   "FONTAGRO",
+        "undp.org":              "UNDP",
+        "reliefweb.int":         "ReliefWeb",
+        "devex.com":             "Devex",
+        "fao.org":               "FAO",
+        "iadb.org":              "IDB / BID",
+        "ifad.org":              "IFAD / FIDA",
+        "worldbank.org":         "Banco Mundial",
+        "ted.europa.eu":         "UE / EuropeAid",
+        "grants.gov":            "USAID / US Gov",
+        "usaid.gov":             "USAID",
+        "iica.int":              "IICA",
+        "fontagro.org":          "FONTAGRO",
+        "cgiar.org":             "CGIAR",
+        "ifpri.org":             "IFPRI",
+        "bioversityinternational.org": "Alliance Bioversity-CIAT",
+        "cimmyt.org":            "CIMMYT / CGIAR",
+        "caf.com":               "CAF",
+        "bcie.org":              "BCIE",
+        "cepal.org":             "CEPAL",
+        "eclac.org":             "CEPAL",
+        "giz.de":                "GIZ",
+        "aecid.es":              "AECID",
+        "afd.fr":                "AFD / Expertise France",
+        "expertisefrance.fr":    "Expertise France",
+        "ilo.org":               "OIT / ILO",
+        "who.int":               "OMS / WHO",
+        "wto.org":               "OMC / WTO",
+        "oecd.org":              "OCDE / OECD",
+        "ebrd.com":              "BERD / EBRD",
+        "ec.europa.eu":          "Comisión Europea",
+        "wfp.org":               "PMA / WFP",
     }
     for domain, name in mapping.items():
         if domain in url:
@@ -977,7 +1069,7 @@ def print_summary(new_opps: list) -> None:
 def main() -> None:
     banner = [
         "╔══════════════════════════════════════════════════════════════════════╗",
-        "║   BUSCADOR DE CONSULTORÍAS — Agroalimentación / Desarrollo / ALC    ║",
+        "║   BUSCADOR — ICyT+Productividad / Comercio+Geopolítica / ALC        ║",
         f"║   {datetime.now().strftime('%d %b %Y  %H:%M')}                                             ║",
         "╚══════════════════════════════════════════════════════════════════════╝",
     ]

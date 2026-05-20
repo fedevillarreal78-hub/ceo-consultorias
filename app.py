@@ -263,6 +263,11 @@ def load_data() -> pd.DataFrame:
     else:
         df["Socio vinculado"] = df["Socio vinculado"].fillna("")
 
+    if "Votos descarte" not in df.columns:
+        df["Votos descarte"] = ""
+    else:
+        df["Votos descarte"] = df["Votos descarte"].fillna("")
+
     if "Monto estimado (USD)" not in df.columns:
         df["Monto estimado (USD)"] = 0.0
     else:
@@ -308,7 +313,7 @@ def save_df(df: pd.DataFrame) -> None:
         "Título", "Organización", "Tipo", "Región", "País",
         "Fecha límite", "Enlace", "Afinidad", "Prioridad",
         "Estado", "Monto estimado (USD)", "Consultor", "Observaciones",
-        "Socio vinculado",
+        "Socio vinculado", "Votos descarte",
     ]
     df[[c for c in export_cols if c in df.columns]].to_csv(CSV_PATH, index=False)
     st.cache_data.clear()
@@ -965,7 +970,8 @@ st.markdown(f"""
   .chip-alta  {{ background: #FFE5E5; color: #B71C1C; }}
   .chip-media {{ background: #FFF8E1; color: #E65100; }}
   .chip-baja  {{ background: #E8F5E9; color: #1B5E20; }}
-  .chip-monto {{ background: #E8F4FD; color: #0D47A1; border: 1px solid #BBDEFB; }}
+  .chip-monto   {{ background: #E8F4FD; color: #0D47A1; border: 1px solid #BBDEFB; }}
+  .chip-discard {{ background: #FFF3E0; color: #BF360C; border: 1px solid #FFCC80; }}
   .chip-link  {{
     background: {GREEN_DARK}; color: {WHITE} !important;
     text-decoration: none; padding: 3px 11px; border-radius: 20px;
@@ -1386,9 +1392,12 @@ if nav_page == "📋  Oportunidades":
             pais      = row.get("País", "—")
             fecha     = row.get("Fecha límite", "—")
             enlace    = str(row.get("Enlace", "") or "")
-            consultor = row.get("Consultor", "—")
-            monto     = float(row.get("Monto estimado (USD)", 0) or 0)
-            obs_val   = str(row.get("Observaciones", "") or "")
+            consultor  = row.get("Consultor", "—")
+            monto      = float(row.get("Monto estimado (USD)", 0) or 0)
+            obs_val    = str(row.get("Observaciones", "") or "")
+            votos_val  = str(row.get("Votos descarte", "") or "")
+            votos_list = [v.strip() for v in votos_val.split("|") if v.strip()]
+            n_votos    = len(votos_list)
 
             descartada = (estado == "Descartada")
             title_cls  = "opp-title-descartada" if descartada else "opp-title"
@@ -1399,9 +1408,10 @@ if nav_page == "📋  Oportunidades":
             consultor_chip = f'<span class="chip chip-mid">👤 {esc(consultor)}</span>' if consultor and consultor != "—" else ""
             monto_meta     = f'<span class="monto-meta">💵 ${monto:,.0f} USD</span>' if monto > 0 else '<span style="color:#aaa;">💵 Monto: —</span>'
             obs_html       = f'<div class="opp-obs">📝 {esc(obs_val)}</div>' if obs_val else ""
+            votos_chip     = f'<span class="chip chip-discard">⛔ {n_votos}/3 propuestas de descarte</span>' if n_votos > 0 and not descartada else ""
 
             st.markdown(f"""
-<div class="opp-card" style="border-left-color:{GREEN_ACCENT}; background:#FAFAFA;">
+<div class="opp-card" style="border-left-color:{'#B71C1C' if descartada else GREEN_ACCENT}; background:{'#FFF5F5' if descartada else '#FAFAFA'};">
   <div class="{title_cls}">{esc(titulo)}</div>
   <div class="opp-meta">
     <span>🏛 <strong>{esc(org)}</strong></span>
@@ -1411,42 +1421,82 @@ if nav_page == "📋  Oportunidades":
   </div>
   <div class="opp-chips">
     <span class="chip" style="background:{econf['bg']};color:{econf['color']};">{esc(estado)}</span>
-    {pais_chip}{monto_chip}{consultor_chip}{link_chip}
+    {pais_chip}{monto_chip}{consultor_chip}{votos_chip}{link_chip}
   </div>
   {obs_html}
 </div>
 """, unsafe_allow_html=True)
 
-            # Edición inline — un solo guardado
-            ec1, ec2 = st.columns([1, 1])
-            with ec1:
-                cur_est = ESTADOS_ORDEN.index(estado) if estado in ESTADOS_ORDEN else 0
-                new_estado = st.selectbox("Estado", ESTADOS_ORDEN, index=cur_est,
-                                          key=f"est_{orig_idx}", label_visibility="collapsed")
-            with ec2:
-                cur_con = CONSULTORES.index(consultor) if consultor in CONSULTORES else 0
-                new_consultor = st.selectbox("Consultor", CONSULTORES, index=cur_con,
-                                             key=f"con_{orig_idx}", label_visibility="collapsed")
-            obs_new = st.text_area(
-                "Observaciones",
-                value=obs_val,
-                max_chars=200,
-                key=f"obs_{orig_idx}",
-                placeholder="Observación interna (máx. 200 caracteres)…",
-                label_visibility="collapsed",
-                height=58,
-            )
-            if st.button("💾 Guardar", key=f"save_{orig_idx}", use_container_width=True):
-                df_all_editable.at[orig_idx, "Estado"]        = new_estado
-                df_all_editable.at[orig_idx, "Consultor"]     = new_consultor
-                df_all_editable.at[orig_idx, "Observaciones"] = obs_new
-                save_df(df_all_editable)
-                st.rerun()
+            # Edición inline — un solo guardado (sin opción "Descartada" en el selector)
+            ESTADOS_EDITABLES = [e for e in ESTADOS_ORDEN if e != "Descartada"]
+            if not descartada:
+                ec1, ec2 = st.columns([1, 1])
+                with ec1:
+                    cur_est = ESTADOS_EDITABLES.index(estado) if estado in ESTADOS_EDITABLES else 0
+                    new_estado = st.selectbox("Estado", ESTADOS_EDITABLES, index=cur_est,
+                                              key=f"est_{orig_idx}", label_visibility="collapsed")
+                with ec2:
+                    cur_con = CONSULTORES.index(consultor) if consultor in CONSULTORES else 0
+                    new_consultor = st.selectbox("Consultor", CONSULTORES, index=cur_con,
+                                                 key=f"con_{orig_idx}", label_visibility="collapsed")
+                obs_new = st.text_area(
+                    "Observaciones",
+                    value=obs_val, max_chars=200, key=f"obs_{orig_idx}",
+                    placeholder="Observación interna (máx. 200 caracteres)…",
+                    label_visibility="collapsed", height=58,
+                )
+                if st.button("💾 Guardar", key=f"save_{orig_idx}", use_container_width=True):
+                    df_all_editable.at[orig_idx, "Estado"]        = new_estado
+                    df_all_editable.at[orig_idx, "Consultor"]     = new_consultor
+                    df_all_editable.at[orig_idx, "Observaciones"] = obs_new
+                    save_df(df_all_editable)
+                    st.rerun()
+
+                # ── Proponer descarte (requiere consenso de 3 personas) ─────
+                votos_label = f"⛔ Proponer descarte — {n_votos}/3 votos"
+                with st.expander(votos_label, expanded=(n_votos > 0)):
+                    if votos_list:
+                        st.markdown(
+                            f"**Propuestas registradas:** {', '.join(votos_list)}\n\n"
+                            f"{'⚠️ Se necesita 1 voto más para descartarla definitivamente.' if n_votos == 2 else ''}"
+                        )
+                    disponibles = [c for c in CONSULTORES if c != "—" and c not in votos_list]
+                    if disponibles:
+                        vc1, vc2 = st.columns([4, 1])
+                        with vc1:
+                            voto_nombre = st.selectbox(
+                                "Quién propone el descarte",
+                                disponibles,
+                                key=f"vsel_{orig_idx}",
+                                label_visibility="collapsed",
+                            )
+                        with vc2:
+                            if st.button("⛔ Votar", key=f"voto_{orig_idx}", use_container_width=True):
+                                nuevos_votos = votos_list + [voto_nombre]
+                                nuevo_estado = "Descartada" if len(nuevos_votos) >= 3 else estado
+                                df_all_editable.at[orig_idx, "Votos descarte"] = "|".join(nuevos_votos)
+                                df_all_editable.at[orig_idx, "Estado"]         = nuevo_estado
+                                save_df(df_all_editable)
+                                st.rerun()
+                    else:
+                        st.caption("Todos los consultores ya han emitido su voto.")
+            else:
+                # Card definitivamente descartada — mostrar quiénes votaron + opción de restaurar
+                st.markdown(
+                    f"<div style='font-size:0.78rem;color:#B71C1C;padding:4px 0;'>"
+                    f"✗ Descartada por consenso · {', '.join(votos_list)}</div>",
+                    unsafe_allow_html=True,
+                )
+                if st.button("↩ Restaurar oportunidad", key=f"restore_{orig_idx}"):
+                    df_all_editable.at[orig_idx, "Estado"]        = "Identificada"
+                    df_all_editable.at[orig_idx, "Votos descarte"] = ""
+                    save_df(df_all_editable)
+                    st.rerun()
 
         st.divider()
         export_cols = ["Título", "Organización", "Tipo", "Región", "País", "Fecha límite",
                        "Enlace", "Estado", "Monto estimado (USD)",
-                       "Consultor", "Socio vinculado", "Observaciones"]
+                       "Consultor", "Socio vinculado", "Observaciones", "Votos descarte"]
         export_df = df[[c for c in export_cols if c in df.columns]]
         st.download_button(
             "⬇️ Descargar resultados filtrados (CSV)",

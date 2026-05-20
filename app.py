@@ -355,15 +355,14 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
         return s
 
     df_active = df_all[df_all["Estado"] != "Descartada"].copy()
-    orden_prio = {"Alta": 0, "Media": 1, "Baja": 2}
-    df_active["_op"] = df_active["Prioridad"].map(orden_prio).fillna(3)
+    orden_estado_pdf = {e: i for i, e in enumerate(ESTADOS_ORDEN)}
+    df_active["_op"] = df_active["Estado"].map(orden_estado_pdf).fillna(len(ESTADOS_ORDEN))
     df_active["_of"] = df_active["Fecha límite"].apply(parse_deadline)
     df_active = df_active.sort_values(["_op", "_of"])
 
     total_act  = len(df_active)
     pipeline_t = df_active["Monto estimado (USD)"].sum()
-    n_alta_t   = len(df_active[df_active["Prioridad"] == "Alta"])
-    n_proc_t   = len(df_active[df_active["Estado"].isin(["Postulada", "Ganada"])])
+    n_proc_t   = len(df_active[df_active["Estado"].isin(["En análisis", "Postulada"])])
 
     class PDF(FPDF):
         def header(self):
@@ -504,7 +503,6 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
     pdf.set_draw_color(RA, GA, BA)
     summary_items = [
         (str(total_act), "Oportunidades activas"),
-        (str(n_alta_t), "Alta prioridad"),
         (str(n_proc_t), "En proceso"),
         (f"${pipeline_t:,.0f}", "Pipeline USD"),
     ]
@@ -566,7 +564,7 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
     pdf.set_fill_color(RD, GD, BD)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("Helvetica", "B", 8)
-    for h, w in [("Consultor", 55), ("Asignadas", 22), ("Alta prioridad", 28), ("En proceso", 28), ("Pipeline USD", 40)]:
+    for h, w in [("Consultor", 65), ("Asignadas", 28), ("En proceso", 35), ("Pipeline USD", 50)]:
         pdf.cell(w, 7, h, border=1, fill=True)
     pdf.ln()
 
@@ -577,17 +575,15 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
         sub = df_asig[df_asig["Consultor"] == nombre]
         if sub.empty:
             continue
-        n_alt_c = len(sub[sub["Prioridad"] == "Alta"])
         n_pro_c = len(sub[sub["Estado"].isin(["En análisis", "Postulada", "Ganada"])])
         pipe_c  = sub["Monto estimado (USD)"].sum()
         pdf.set_fill_color(RS, GS, BS) if alt else pdf.set_fill_color(255, 255, 255)
         pdf.set_text_color(30, 30, 30)
         pdf.set_font("Helvetica", "", 8)
-        pdf.cell(55, 6, safe(nombre), border=1, fill=True)
-        pdf.cell(22, 6, str(len(sub)), border=1, fill=True)
-        pdf.cell(28, 6, str(n_alt_c), border=1, fill=True)
-        pdf.cell(28, 6, str(n_pro_c), border=1, fill=True)
-        pdf.cell(40, 6, f"${pipe_c:,.0f}" if pipe_c > 0 else "-", border=1, fill=True)
+        pdf.cell(65, 6, safe(nombre), border=1, fill=True)
+        pdf.cell(28, 6, str(len(sub)), border=1, fill=True)
+        pdf.cell(35, 6, str(n_pro_c), border=1, fill=True)
+        pdf.cell(50, 6, f"${pipe_c:,.0f}" if pipe_c > 0 else "-", border=1, fill=True)
         pdf.ln()
         alt = not alt
 
@@ -595,11 +591,10 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
         pdf.set_fill_color(255, 248, 225)
         pdf.set_text_color(100, 60, 0)
         pdf.set_font("Helvetica", "I", 8)
-        pdf.cell(55, 6, "Sin asignar", border=1, fill=True)
-        pdf.cell(22, 6, str(sin_asig_n), border=1, fill=True)
-        pdf.cell(28, 6, "-", border=1, fill=True)
-        pdf.cell(28, 6, "-", border=1, fill=True)
-        pdf.cell(40, 6, "-", border=1, fill=True)
+        pdf.cell(65, 6, "Sin asignar", border=1, fill=True)
+        pdf.cell(28, 6, str(sin_asig_n), border=1, fill=True)
+        pdf.cell(35, 6, "-", border=1, fill=True)
+        pdf.cell(50, 6, "-", border=1, fill=True)
         pdf.ln()
 
     # ── SOCIOS ESTRATÉGICOS (en resumen ejecutivo) ────────────────────────────
@@ -625,8 +620,8 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
         pipe_c = sub_c["Monto estimado (USD)"].sum()
         pipe_s = f" | Pipeline: ${pipe_c:,.0f}" if pipe_c > 0 else ""
         pdf.cell(0, 7, safe(f"  {nombre_c}  ({len(sub_c)} oportunidades{pipe_s})"), ln=True)
-        col_wo = [80, 28, 22, 147]
-        heads  = ["Titulo", "Estado", "Prioridad", "Observaciones"]
+        col_wo = [90, 30, 157]
+        heads  = ["Titulo", "Estado", "Observaciones"]
         pdf.set_fill_color(RD, GD, BD)
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Helvetica", "B", 6)
@@ -641,8 +636,7 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
             pdf.set_font("Helvetica", "", 6)
             pdf.cell(col_wo[0], 6, safe(rc.get("Titulo", rc.get("Título", "-")), 62), border=1, fill=True)
             pdf.cell(col_wo[1], 6, safe(rc.get("Estado", "-"), 18), border=1, fill=True)
-            pdf.cell(col_wo[2], 6, safe(rc.get("Prioridad", "-"), 14), border=1, fill=True)
-            pdf.cell(col_wo[3], 6, obs_val, border=1, fill=True)
+            pdf.cell(col_wo[2], 6, obs_val, border=1, fill=True)
             pdf.ln()
             alt2 = not alt2
 
@@ -1273,11 +1267,11 @@ if texto.strip():
     )
     df = df[mask]
 
-orden_prio = {"Alta": 0, "Media": 1, "Baja": 2}
+orden_estado = {e: i for i, e in enumerate(ESTADOS_ORDEN)}
 df = df.copy()
-df["_ord_prio"]  = df["Prioridad"].map(orden_prio).fillna(3)
-df["_ord_fecha"] = df["Fecha límite"].apply(parse_deadline)
-df = df.sort_values(["_ord_prio", "_ord_fecha"]).drop(columns=["_ord_prio", "_ord_fecha"])
+df["_ord_estado"] = df["Estado"].map(orden_estado).fillna(len(ESTADOS_ORDEN))
+df["_ord_fecha"]  = df["Fecha límite"].apply(parse_deadline)
+df = df.sort_values(["_ord_estado", "_ord_fecha"]).drop(columns=["_ord_estado", "_ord_fecha"])
 
 # ── Hero ──────────────────────────────────────────────────────────────────────
 
@@ -1325,10 +1319,8 @@ if days_old > 7:
 # ── Métricas ──────────────────────────────────────────────────────────────────
 
 total        = len(df)
-n_alta       = len(df[df["Prioridad"] == "Alta"])
-n_icyt       = len(df[df["Afinidad"].isin(["ICyT, Productividad y Desarrollo", "Ambos"])])
-n_comercio   = len(df[df["Afinidad"].isin(["Comercio y Geopolítica", "Ambos"])])
-n_empresa    = len(df[df["Afinidad"].isin(["Empresarial", "Ambos"])])
+n_proceso    = len(df[df["Estado"].isin(["En análisis", "Postulada"])])
+n_asignadas  = len(df[df["Consultor"] != "—"])
 pipeline     = df["Monto estimado (USD)"].sum()
 pipeline_fmt = f"${pipeline:,.0f}" if pipeline > 0 else "—"
 
@@ -1339,20 +1331,12 @@ st.markdown(f"""
     <div class="metric-label">Total filtradas</div>
   </div>
   <div class="metric-pill">
-    <div class="metric-num" style="color:#C62828">{n_alta}</div>
-    <div class="metric-label">🔴 Prioridad Alta</div>
+    <div class="metric-num" style="color:#1565C0">{n_proceso}</div>
+    <div class="metric-label">🔬 En proceso</div>
   </div>
   <div class="metric-pill">
-    <div class="metric-num">{n_icyt}</div>
-    <div class="metric-label">🔬 ICyT / Produc.</div>
-  </div>
-  <div class="metric-pill">
-    <div class="metric-num">{n_comercio}</div>
-    <div class="metric-label">🌐 Comercio</div>
-  </div>
-  <div class="metric-pill">
-    <div class="metric-num">{n_empresa}</div>
-    <div class="metric-label">🏢 Para CEO</div>
+    <div class="metric-num">{n_asignadas}</div>
+    <div class="metric-label">👤 Para CEO</div>
   </div>
   <div class="metric-pill">
     <div class="metric-num-sm" style="color:#0D47A1">{pipeline_fmt}</div>
@@ -1380,16 +1364,21 @@ if nav_page == "📋  Oportunidades":
         grupo_actual      = None
         df_all_editable   = load_data()
 
+        estado_labels = {
+            "Identificada": "🔵 Identificadas",
+            "En análisis":  "🔬 En análisis",
+            "Postulada":    "📤 Postuladas",
+            "Ganada":       "🏆 Ganadas",
+            "Descartada":   "🗑 Descartadas",
+        }
+
         for orig_idx, row in df.iterrows():
-            prio   = row.get("Prioridad", "Media")
-            pconf  = PRIO_MAP.get(prio, PRIO_MAP["Media"])
             estado = row.get("Estado", "Identificada")
             econf  = ESTADO_CHIPS.get(estado, ESTADO_CHIPS["Identificada"])
 
-            if prio != grupo_actual:
-                grupo_actual = prio
-                labels = {"Alta": "🔴 Prioridad Alta", "Media": "🟡 Prioridad Media", "Baja": "🟢 Otras oportunidades"}
-                st.markdown(f'<div class="section-header">{labels.get(prio, prio)}</div>', unsafe_allow_html=True)
+            if estado != grupo_actual:
+                grupo_actual = estado
+                st.markdown(f'<div class="section-header">{estado_labels.get(estado, estado)}</div>', unsafe_allow_html=True)
 
             titulo    = row.get("Título", "Sin título")
             org       = row.get("Organización", "—")
@@ -1397,14 +1386,12 @@ if nav_page == "📋  Oportunidades":
             pais      = row.get("País", "—")
             fecha     = row.get("Fecha límite", "—")
             enlace    = str(row.get("Enlace", "") or "")
-            afin      = row.get("Afinidad", "—")
             consultor = row.get("Consultor", "—")
             monto     = float(row.get("Monto estimado (USD)", 0) or 0)
             obs_val   = str(row.get("Observaciones", "") or "")
 
             descartada = (estado == "Descartada")
             title_cls  = "opp-title-descartada" if descartada else "opp-title"
-            chip_prio  = {"Alta": "chip-alta", "Media": "chip-media", "Baja": "chip-baja"}.get(prio, "chip-mid")
 
             link_chip      = f'<a class="chip chip-link" href="{esc(enlace)}" target="_blank">🔗 Ver convocatoria</a>' if enlace.startswith("http") else ""
             pais_chip      = f'<span class="chip chip-mid">📍 {esc(pais)}</span>' if pais and pais != "—" else ""
@@ -1414,7 +1401,7 @@ if nav_page == "📋  Oportunidades":
             obs_html       = f'<div class="opp-obs">📝 {esc(obs_val)}</div>' if obs_val else ""
 
             st.markdown(f"""
-<div class="opp-card" style="border-left-color:{pconf['border']}; background:{pconf['bg']}08;">
+<div class="opp-card" style="border-left-color:{GREEN_ACCENT}; background:#FAFAFA;">
   <div class="{title_cls}">{esc(titulo)}</div>
   <div class="opp-meta">
     <span>🏛 <strong>{esc(org)}</strong></span>
@@ -1423,8 +1410,6 @@ if nav_page == "📋  Oportunidades":
     <span>{monto_meta}</span>
   </div>
   <div class="opp-chips">
-    <span class="chip chip-dark">{esc(afin)}</span>
-    <span class="chip {chip_prio}">{pconf['badge']} {esc(prio)}</span>
     <span class="chip" style="background:{econf['bg']};color:{econf['color']};">{esc(estado)}</span>
     {pais_chip}{monto_chip}{consultor_chip}{link_chip}
   </div>
@@ -1432,8 +1417,8 @@ if nav_page == "📋  Oportunidades":
 </div>
 """, unsafe_allow_html=True)
 
-            # Edición inline — Estado y Consultor
-            ec1, ec2, ec3 = st.columns([3, 3, 2])
+            # Edición inline — un solo guardado
+            ec1, ec2 = st.columns([1, 1])
             with ec1:
                 cur_est = ESTADOS_ORDEN.index(estado) if estado in ESTADOS_ORDEN else 0
                 new_estado = st.selectbox("Estado", ESTADOS_ORDEN, index=cur_est,
@@ -1442,38 +1427,25 @@ if nav_page == "📋  Oportunidades":
                 cur_con = CONSULTORES.index(consultor) if consultor in CONSULTORES else 0
                 new_consultor = st.selectbox("Consultor", CONSULTORES, index=cur_con,
                                              key=f"con_{orig_idx}", label_visibility="collapsed")
-            with ec3:
-                if new_estado != estado or new_consultor != consultor:
-                    if st.button("💾 Guardar", key=f"save_{orig_idx}", type="primary"):
-                        df_all_editable.at[orig_idx, "Estado"]    = new_estado
-                        df_all_editable.at[orig_idx, "Consultor"] = new_consultor
-                        save_df(df_all_editable)
-                        st.rerun()
-
-            # Observaciones — área de texto editable (máx 200 caracteres)
-            col_obs, col_obs_save = st.columns([7, 1])
-            with col_obs:
-                obs_new = st.text_area(
-                    "Observaciones",
-                    value=obs_val,
-                    max_chars=200,
-                    key=f"obs_{orig_idx}",
-                    placeholder="Agregar observación interna (máx. 200 caracteres)…",
-                    label_visibility="collapsed",
-                    height=58,
-                )
-            with col_obs_save:
-                st.write("")
-                st.write("")
-                if obs_new != obs_val:
-                    if st.button("💾", key=f"sobs_{orig_idx}", help="Guardar observación"):
-                        df_all_editable.at[orig_idx, "Observaciones"] = obs_new
-                        save_df(df_all_editable)
-                        st.rerun()
+            obs_new = st.text_area(
+                "Observaciones",
+                value=obs_val,
+                max_chars=200,
+                key=f"obs_{orig_idx}",
+                placeholder="Observación interna (máx. 200 caracteres)…",
+                label_visibility="collapsed",
+                height=58,
+            )
+            if st.button("💾 Guardar", key=f"save_{orig_idx}", use_container_width=True):
+                df_all_editable.at[orig_idx, "Estado"]        = new_estado
+                df_all_editable.at[orig_idx, "Consultor"]     = new_consultor
+                df_all_editable.at[orig_idx, "Observaciones"] = obs_new
+                save_df(df_all_editable)
+                st.rerun()
 
         st.divider()
         export_cols = ["Título", "Organización", "Tipo", "Región", "País", "Fecha límite",
-                       "Enlace", "Afinidad", "Prioridad", "Estado", "Monto estimado (USD)",
+                       "Enlace", "Estado", "Monto estimado (USD)",
                        "Consultor", "Socio vinculado", "Observaciones"]
         export_df = df[[c for c in export_cols if c in df.columns]]
         st.download_button(
@@ -1594,14 +1566,12 @@ elif nav_page == "📊  Pipeline CEO":
         sub = df_asig[df_asig["Consultor"] == nombre]
         if sub.empty:
             continue
-        n_alt = int((sub["Prioridad"] == "Alta").sum())
         n_pro = int(sub["Estado"].isin(["En análisis", "Postulada", "Ganada"]).sum())
         pipe  = sub["Monto estimado (USD)"].sum()
         pipe_s = f"${pipe:,.0f}" if pipe > 0 else "-"
         rows_con += (
             f'<tr><td style="{td_style}font-weight:600;">👤 {esc(nombre)}</td>'
             f'<td style="{td_r_style}">{len(sub)}</td>'
-            f'<td style="{td_r_style}">{n_alt}</td>'
             f'<td style="{td_r_style}">{n_pro}</td>'
             f'<td style="{td_r_style}">{pipe_s}</td></tr>'
         )
@@ -1613,7 +1583,6 @@ elif nav_page == "📊  Pipeline CEO":
   <thead><tr>
     <th style="{th_style}">Consultor</th>
     <th style="{th_style}text-align:right;">Asignadas</th>
-    <th style="{th_style}text-align:right;">Alta prioridad</th>
     <th style="{th_style}text-align:right;">En proceso</th>
     <th style="{th_style}text-align:right;">Pipeline USD</th>
   </tr></thead>
@@ -1632,25 +1601,22 @@ elif nav_page == "📊  Pipeline CEO":
             if sub.empty:
                 continue
             with st.expander(f"👤 {nombre} — {len(sub)} oportunidad{'es' if len(sub)!=1 else ''}"):
-                for idx2, r in sub.sort_values("Prioridad").iterrows():
-                    pc2  = PRIO_MAP.get(r.get("Prioridad", "Media"), PRIO_MAP["Media"])
+                for idx2, r in sub.sort_values("Estado").iterrows():
                     ec2  = ESTADO_CHIPS.get(r.get("Estado", "Identificada"), ESTADO_CHIPS["Identificada"])
                     en2  = str(r.get("Enlace", "") or "")
                     lk2  = f'<a class="chip chip-link" href="{esc(en2)}" target="_blank">🔗 Ver</a>' if en2.startswith("http") else ""
-                    cp2  = {"Alta": "chip-alta", "Media": "chip-media", "Baja": "chip-baja"}.get(r.get("Prioridad", "Media"), "chip-mid")
                     mo2  = float(r.get("Monto estimado (USD)", 0) or 0)
                     mo2s = f'<span class="chip chip-monto">💰 ${mo2:,.0f} USD</span>' if mo2 > 0 else ""
                     sv_val = str(r.get("Socio vinculado", "") or "")
                     sv_chip = f'<span class="chip chip-mid">🤝 {esc(sv_val)}</span>' if sv_val and sv_val != "—" else ""
                     st.markdown(f"""
-<div class="opp-card" style="border-left-color:{pc2['border']};background:{pc2['bg']}08;margin-bottom:0.3rem;">
+<div class="opp-card" style="border-left-color:{GREEN_ACCENT};background:#FAFAFA;margin-bottom:0.3rem;">
   <div class="opp-title">{esc(r.get('Título',''))}</div>
   <div class="opp-meta">
     <span>🏛 {esc(r.get('Organización','—'))}</span>
     <span>📅 {esc(r.get('Fecha límite','—'))}</span>
   </div>
   <div class="opp-chips">
-    <span class="chip {cp2}">{pc2['badge']} {esc(r.get('Prioridad',''))}</span>
     <span class="chip" style="background:{ec2['bg']};color:{ec2['color']};">{esc(r.get('Estado',''))}</span>
     {mo2s}{sv_chip}{lk2}
   </div>
@@ -1720,16 +1686,12 @@ elif nav_page == "📥  Carga manual de oportunidades":
             f_fecha   = st.text_input("Fecha límite", placeholder="YYYY-MM-DD")
             f_monto   = st.number_input("Monto estimado (USD)", min_value=0, value=0, step=1000)
 
-        ff1, ff2, ff3, ff4, ff5 = st.columns(5)
+        ff1, ff2, ff3 = st.columns(3)
         with ff1:
             f_tipo    = st.selectbox("Tipo", ["Individual", "Servicios", "Licitación", "Otro"])
         with ff2:
-            f_afin    = st.selectbox("Afinidad", AFINIDAD_OPCIONES + ["Ambos"])
-        with ff3:
-            f_prio    = st.selectbox("Prioridad", ["Alta", "Media", "Baja"], index=1)
-        with ff4:
             f_estado  = st.selectbox("Estado", ESTADOS_ORDEN, index=0)
-        with ff5:
+        with ff3:
             f_consul  = st.selectbox("Consultor", CONSULTORES, index=0)
 
         submitted = st.form_submit_button("✅ Agregar a la base de datos", type="primary", use_container_width=True)
@@ -1748,8 +1710,8 @@ elif nav_page == "📥  Carga manual de oportunidades":
                 "País":                 f_pais,
                 "Fecha límite":         f_fecha.strip() if f_fecha.strip() else "—",
                 "Enlace":               f_enlace.strip(),
-                "Afinidad":             f_afin,
-                "Prioridad":            f_prio,
+                "Afinidad":             "ICyT, Productividad y Desarrollo",
+                "Prioridad":            "Media",
                 "Estado":               f_estado,
                 "Monto estimado (USD)": float(f_monto) if f_monto else 0.0,
                 "Consultor":            f_consul,
@@ -1765,7 +1727,7 @@ elif nav_page == "📥  Carga manual de oportunidades":
     st.divider()
 
     df_edit = load_data()
-    EDIT_COLS = ["Título", "Organización", "Fecha límite", "Prioridad", "Estado", "Consultor", "Monto estimado (USD)", "País"]
+    EDIT_COLS = ["Título", "Organización", "Fecha límite", "Estado", "Consultor", "Monto estimado (USD)", "País"]
     df_show   = df_edit[[c for c in EDIT_COLS if c in df_edit.columns]].copy()
 
     edited = st.data_editor(
@@ -1778,7 +1740,6 @@ elif nav_page == "📥  Carga manual de oportunidades":
             "Título":               st.column_config.TextColumn("Título", width="large", disabled=True),
             "Organización":         st.column_config.TextColumn("Organización", disabled=True),
             "Fecha límite":         st.column_config.TextColumn("Fecha límite", disabled=True),
-            "Prioridad":            st.column_config.SelectboxColumn("Prioridad", options=["Alta", "Media", "Baja"]),
             "Estado":               st.column_config.SelectboxColumn("Estado", options=ESTADOS_ORDEN),
             "Consultor":            st.column_config.SelectboxColumn("Consultor", options=CONSULTORES),
             "Monto estimado (USD)": st.column_config.NumberColumn("Monto (USD)", min_value=0, format="$%d"),
@@ -1789,7 +1750,7 @@ elif nav_page == "📥  Carga manual de oportunidades":
     cs, cd = st.columns([1, 1])
     with cs:
         if st.button("💾 Guardar cambios en CSV", type="primary", use_container_width=True):
-            for col in ["Estado", "Consultor", "Monto estimado (USD)", "País", "Prioridad"]:
+            for col in ["Estado", "Consultor", "Monto estimado (USD)", "País"]:
                 if col in edited.columns:
                     df_edit[col] = edited[col].values
             save_df(df_edit)

@@ -1504,40 +1504,95 @@ elif nav_page == "📊  Pipeline CEO":
         else:
             st.caption("Generá el informe primero para poder descargarlo.")
 
-    # Por consultor
-    st.markdown(f'<div class="section-header" style="margin-top:1rem;">Por Consultor</div>', unsafe_allow_html=True)
-    df_asig = df_c[df_c["Consultor"] != "—"]
-    sin_asig = df_c[df_c["Consultor"] == "—"]
+    # ── Resumen ejecutivo en pantalla ─────────────────────────────────────────
+    st.markdown('<div class="section-header" style="margin-top:1rem;">Resumen Ejecutivo</div>', unsafe_allow_html=True)
 
+    df_act = df_c[df_c["Estado"] != "Descartada"].copy()
+    total_act = len(df_act)
+
+    # Tabla distribución por Estado
+    th_style = f"background:{GREEN_DARK};color:#fff;padding:6px 12px;text-align:left;font-size:0.78rem;font-weight:700;letter-spacing:0.04em;"
+    td_style = "padding:6px 12px;font-size:0.82rem;border-bottom:1px solid #E8F5E9;"
+    td_r_style = "padding:6px 12px;font-size:0.82rem;border-bottom:1px solid #E8F5E9;text-align:right;"
+
+    rows_estado = ""
+    for e in ESTADOS_ORDEN:
+        cnt = int((df_act["Estado"] == e).sum())
+        if cnt == 0:
+            continue
+        pct = f"{cnt / total_act * 100:.1f}%" if total_act > 0 else "-"
+        mont = df_act[df_act["Estado"] == e]["Monto estimado (USD)"].sum()
+        mont_s = f"${mont:,.0f}" if mont > 0 else "-"
+        chip_bg  = ESTADO_CHIPS.get(e, {}).get("bg", "#eee")
+        chip_col = ESTADO_CHIPS.get(e, {}).get("color", "#333")
+        rows_estado += (
+            f'<tr><td style="{td_style}">'
+            f'<span style="background:{chip_bg};color:{chip_col};padding:2px 9px;border-radius:12px;font-size:0.75rem;font-weight:600;">{esc(e)}</span>'
+            f'</td><td style="{td_r_style}">{cnt}</td>'
+            f'<td style="{td_r_style}">{pct}</td>'
+            f'<td style="{td_r_style}">{mont_s}</td></tr>'
+        )
+
+    st.markdown(f"""
+<div style="margin-bottom:1.4rem;">
+<div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:{GREEN_MID};margin-bottom:0.4rem;">Distribución por Estado</div>
+<table style="width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <thead><tr>
+    <th style="{th_style}">Estado</th>
+    <th style="{th_style}text-align:right;">N°</th>
+    <th style="{th_style}text-align:right;">% del total</th>
+    <th style="{th_style}text-align:right;">Pipeline estimado USD</th>
+  </tr></thead>
+  <tbody>{rows_estado}</tbody>
+</table>
+</div>
+""", unsafe_allow_html=True)
+
+    # Tabla distribución por Consultor
+    df_asig = df_act[df_act["Consultor"] != "—"]
+    rows_con = ""
+    for nombre in [c for c in CONSULTORES if c != "—"]:
+        sub = df_asig[df_asig["Consultor"] == nombre]
+        if sub.empty:
+            continue
+        n_alt = int((sub["Prioridad"] == "Alta").sum())
+        n_pro = int(sub["Estado"].isin(["En análisis", "Postulada", "Ganada"]).sum())
+        pipe  = sub["Monto estimado (USD)"].sum()
+        pipe_s = f"${pipe:,.0f}" if pipe > 0 else "-"
+        rows_con += (
+            f'<tr><td style="{td_style}font-weight:600;">👤 {esc(nombre)}</td>'
+            f'<td style="{td_r_style}">{len(sub)}</td>'
+            f'<td style="{td_r_style}">{n_alt}</td>'
+            f'<td style="{td_r_style}">{n_pro}</td>'
+            f'<td style="{td_r_style}">{pipe_s}</td></tr>'
+        )
+
+    st.markdown(f"""
+<div style="margin-bottom:1.6rem;">
+<div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:{GREEN_MID};margin-bottom:0.4rem;">Distribución por Consultor</div>
+<table style="width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <thead><tr>
+    <th style="{th_style}">Consultor</th>
+    <th style="{th_style}text-align:right;">Asignadas</th>
+    <th style="{th_style}text-align:right;">Alta prioridad</th>
+    <th style="{th_style}text-align:right;">En proceso</th>
+    <th style="{th_style}text-align:right;">Pipeline USD</th>
+  </tr></thead>
+  <tbody>{rows_con}</tbody>
+</table>
+</div>
+""", unsafe_allow_html=True)
+
+    # Observaciones por consultor (expandibles)
+    st.markdown('<div class="section-header" style="margin-top:0.5rem;font-size:0.95rem;">Observaciones por oportunidad</div>', unsafe_allow_html=True)
     if df_asig.empty:
-        st.info("Aún no hay oportunidades asignadas. Usá la pestaña **Editar datos** o los selectores bajo cada card en **Oportunidades**.")
+        st.info("Aún no hay oportunidades asignadas a consultores.")
     else:
         for nombre in [c for c in CONSULTORES if c != "—"]:
             sub = df_asig[df_asig["Consultor"] == nombre]
             if sub.empty:
                 continue
-            pipe_p  = sub["Monto estimado (USD)"].sum()
-            n_alt_p = len(sub[sub["Prioridad"] == "Alta"])
-            gan_p   = len(sub[sub["Estado"] == "Ganada"])
-            est_h   = " ".join(
-                f'<span class="chip" style="background:{ESTADO_CHIPS.get(e,{}).get("bg","#eee")};'
-                f'color:{ESTADO_CHIPS.get(e,{}).get("color","#333")};">{e}: {len(sub[sub["Estado"]==e])}</span>'
-                for e in ESTADOS_ORDEN if len(sub[sub["Estado"]==e]) > 0
-            )
-            st.markdown(f"""
-<div class="cartera-card">
-  <div class="cartera-name">👤 {esc(nombre)}</div>
-  <div class="cartera-stats">
-    <span>📋 {len(sub)} oportunidad{'es' if len(sub)!=1 else ''}</span>
-    <span>🔴 {n_alt_p} Alta prioridad</span>
-    <span>🏆 {gan_p} Ganada{'s' if gan_p!=1 else ''}</span>
-    {'<span>💰 $' + f'{pipe_p:,.0f} USD</span>' if pipe_p > 0 else ''}
-  </div>
-  <div class="cartera-estados">{est_h}</div>
-</div>
-""", unsafe_allow_html=True)
-
-            with st.expander(f"Ver oportunidades de {nombre} ({len(sub)})"):
+            with st.expander(f"👤 {nombre} — {len(sub)} oportunidad{'es' if len(sub)!=1 else ''}"):
                 for idx2, r in sub.sort_values("Prioridad").iterrows():
                     pc2  = PRIO_MAP.get(r.get("Prioridad", "Media"), PRIO_MAP["Media"])
                     ec2  = ESTADO_CHIPS.get(r.get("Estado", "Identificada"), ESTADO_CHIPS["Identificada"])
@@ -1552,7 +1607,6 @@ elif nav_page == "📊  Pipeline CEO":
   <div class="opp-meta">
     <span>🏛 {esc(r.get('Organización','—'))}</span>
     <span>📅 {esc(r.get('Fecha límite','—'))}</span>
-    {'<span class="monto-meta">💵 $' + f'{mo2:,.0f} USD</span>' if mo2 > 0 else ''}
   </div>
   <div class="opp-chips">
     <span class="chip {cp2}">{pc2['badge']} {esc(r.get('Prioridad',''))}</span>
@@ -1561,7 +1615,6 @@ elif nav_page == "📊  Pipeline CEO":
   </div>
 </div>
 """, unsafe_allow_html=True)
-                    # Observaciones por oportunidad (hasta 250 chars)
                     obs_val = str(r.get("Observaciones", "") or "")
                     col_obs, col_save_obs = st.columns([5, 1])
                     with col_obs:
@@ -1582,31 +1635,6 @@ elif nav_page == "📊  Pipeline CEO":
                                 save_df(df_c)
                                 st.rerun()
                     st.markdown("<hr style='margin:0.3rem 0;border-color:#E8F5E9;'>", unsafe_allow_html=True)
-
-    if len(sin_asig) > 0:
-        st.markdown(f'<div class="section-header" style="margin-top:1rem;">Sin asignar ({len(sin_asig)})</div>', unsafe_allow_html=True)
-        with st.expander(f"Ver {len(sin_asig)} oportunidades sin consultor"):
-            for _, r in sin_asig.head(30).iterrows():
-                pc3  = PRIO_MAP.get(r.get("Prioridad", "Media"), PRIO_MAP["Media"])
-                en3  = str(r.get("Enlace", "") or "")
-                lk3  = f'<a class="chip chip-link" href="{esc(en3)}" target="_blank">🔗 Ver</a>' if en3.startswith("http") else ""
-                cp3  = {"Alta": "chip-alta", "Media": "chip-media", "Baja": "chip-baja"}.get(r.get("Prioridad", "Media"), "chip-mid")
-                mo3  = float(r.get("Monto estimado (USD)", 0) or 0)
-                st.markdown(f"""
-<div class="opp-card" style="border-left-color:{pc3['border']};background:{pc3['bg']}08;margin-bottom:0.45rem;">
-  <div class="opp-title">{esc(r.get('Título',''))}</div>
-  <div class="opp-meta">
-    <span>🏛 {esc(r.get('Organización','—'))}</span>
-    <span>📅 {esc(r.get('Fecha límite','—'))}</span>
-    {'<span class="monto-meta">💵 $' + f'{mo3:,.0f} USD</span>' if mo3 > 0 else ''}
-  </div>
-  <div class="opp-chips">
-    <span class="chip chip-dark">{esc(r.get('Afinidad','—'))}</span>
-    <span class="chip {cp3}">{pc3['badge']} {esc(r.get('Prioridad',''))}</span>
-    {lk3}
-  </div>
-</div>
-""", unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 3 — EDITAR DATOS

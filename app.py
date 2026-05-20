@@ -782,6 +782,27 @@ st.markdown(f"""
     color: #1A3D2E !important;
   }}
 
+  /* Expanders en sidebar — fondo oscuro siempre */
+  section[data-testid="stSidebar"] details {{
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 8px !important;
+    margin-bottom: 4px !important;
+  }}
+  section[data-testid="stSidebar"] details summary {{
+    color: {WHITE} !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    padding: 6px 10px !important;
+    background: transparent !important;
+  }}
+  section[data-testid="stSidebar"] details > div,
+  section[data-testid="stSidebar"] .streamlit-expanderContent {{
+    background: rgba(255,255,255,0.03) !important;
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+    padding: 8px 6px !important;
+  }}
+
   /* Divider */
   section[data-testid="stSidebar"] hr {{ border-color: rgba(255,255,255,0.12) !important; }}
 
@@ -1039,7 +1060,7 @@ with st.sidebar:
         options=[
             "📋  Oportunidades",
             "📊  Cartera",
-            "📥  Carga manual",
+            "📥  Carga manual de oportunidades",
             "🤝  Socios Estratégicos",
         ],
         label_visibility="collapsed",
@@ -1059,24 +1080,14 @@ with st.sidebar:
 
         df_full = load_data()
 
-        with st.expander("🎯 Prioridad", expanded=False):
-            prioridad_sel = st.multiselect(
-                "Prioridad", ["Alta", "Media", "Baja"],
-                default=["Alta", "Media", "Baja"],
-                label_visibility="collapsed",
-            )
+        # Prioridad y Afinidad: siempre todos (sin filtro visible)
+        prioridad_sel = ["Alta", "Media", "Baja"]
+        afinidad_sel  = AFINIDAD_OPCIONES + ["Ambos"]
 
         with st.expander("🔄 Estado", expanded=False):
             estado_sel = st.multiselect(
                 "Estado", ESTADOS_ORDEN,
                 default=[e for e in ESTADOS_ORDEN if e != "Descartada"],
-                label_visibility="collapsed",
-            )
-
-        with st.expander("🔬 Perfil / Afinidad", expanded=False):
-            afinidad_sel = st.multiselect(
-                "Afinidad", AFINIDAD_OPCIONES + ["Ambos"],
-                default=AFINIDAD_OPCIONES + ["Ambos"],
                 label_visibility="collapsed",
             )
 
@@ -1548,7 +1559,7 @@ elif nav_page == "📊  Cartera":
 # TAB 3 — EDITAR DATOS
 # ════════════════════════════════════════════════════════════════════════════
 
-elif nav_page == "📥  Carga manual":
+elif nav_page == "📥  Carga manual de oportunidades":
     st.markdown("**Editá Estado, Consultor, Monto y País directamente en la tabla.**")
     if _is_cloud:
         st.info("Versión en la nube: guardá los cambios y descargá el CSV para subirlo al repositorio.", icon="ℹ️")

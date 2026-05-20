@@ -319,7 +319,7 @@ def save_socios(df: pd.DataFrame) -> None:
 
 # ── PDF ───────────────────────────────────────────────────────────────────────
 
-def generar_pdf(df_all: pd.DataFrame, hoy: date) -> bytes:
+def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) -> bytes:
     from fpdf import FPDF  # lazy import
 
     # RGB CEO palette
@@ -409,6 +409,39 @@ def generar_pdf(df_all: pd.DataFrame, hoy: date) -> bytes:
                 self.set_fill_color(RS, GS, BS) if alt else self.set_fill_color(255, 255, 255)
                 self.set_text_color(30, 30, 30)
                 self.set_font("Helvetica", "", 7)
+                row_h = 6
+                for v, w in zip(vals, col_w):
+                    self.cell(w, row_h, v, border=1, fill=True)
+                self.ln()
+                alt = not alt
+
+        def socios_table(self, df_s):
+            if df_s.empty:
+                self.set_font("Helvetica", "I", 8)
+                self.set_text_color(140, 140, 140)
+                self.cell(0, 7, "  Sin socios estrategicos registrados.", ln=True)
+                return
+            headers = ["Nombre", "Area de experiencia", "Responsable", "Actividades", "Resultados"]
+            col_w   = [45, 72, 38, 68, 74]
+            self.set_fill_color(RD, GD, BD)
+            self.set_text_color(255, 255, 255)
+            self.set_font("Helvetica", "B", 7)
+            for h, w in zip(headers, col_w):
+                self.cell(w, 7, h, border=1, fill=True)
+            self.ln()
+            alt = True
+            for _, row in df_s.iterrows():
+                self.set_fill_color(RS, GS, BS) if alt else self.set_fill_color(255, 255, 255)
+                self.set_text_color(30, 30, 30)
+                self.set_font("Helvetica", "", 7)
+                vals = [
+                    safe(row.get("Nombre", "-"), 28),
+                    safe(row.get("Experiencia", "-"), 48),
+                    safe(row.get("Responsable", "-"), 24),
+                    safe(row.get("Actividades", "-"), 45),
+                    safe(row.get("Resultados", "-"), 50),
+                ]
+                # Calcular altura de fila según texto más largo (simple wrap a 2 líneas max)
                 row_h = 6
                 for v, w in zip(vals, col_w):
                     self.cell(w, row_h, v, border=1, fill=True)
@@ -573,6 +606,47 @@ def generar_pdf(df_all: pd.DataFrame, hoy: date) -> bytes:
         pdf.add_page()
         pdf.section_title("GANADAS", r=46, g=125, b=50)
         pdf.opps_table(df_gan)
+
+    # ── SOCIOS ESTRATÉGICOS ───────────────────────────────────────────────────
+    pdf.add_page()
+    pdf.section_title("SOCIOS ESTRATEGICOS DE GRUPO CEO", r=RM, g=GM, b=BM)
+    pdf.socios_table(df_socios_pdf)
+
+    # ── GESTIÓN POR CONSULTOR (con observaciones) ─────────────────────────────
+    pdf.add_page()
+    pdf.section_title("GESTION POR CONSULTOR - DETALLE Y OBSERVACIONES", r=RD, g=GD, b=BD)
+    df_asig_pdf = df_active[df_active["Consultor"] != "—"]
+    for nombre_c in CONSULTORES[1:]:
+        sub_c = df_asig_pdf[df_asig_pdf["Consultor"] == nombre_c]
+        if sub_c.empty:
+            continue
+        pdf.set_font("Helvetica", "B", 8)
+        pdf.set_text_color(RD, GD, BD)
+        pipe_c = sub_c["Monto estimado (USD)"].sum()
+        pipe_s = f" | Pipeline: ${pipe_c:,.0f}" if pipe_c > 0 else ""
+        pdf.cell(0, 7, safe(f"  {nombre_c}  ({len(sub_c)} oportunidades{pipe_s})"), ln=True)
+        # Mini-tabla: Título | Estado | Prioridad | Observaciones
+        col_wo = [95, 28, 22, 152]
+        heads  = ["Titulo", "Estado", "Prioridad", "Observaciones"]
+        pdf.set_fill_color(RD, GD, BD)
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font("Helvetica", "B", 6)
+        for h, w in zip(heads, col_wo):
+            pdf.cell(w, 6, h, border=1, fill=True)
+        pdf.ln()
+        alt2 = True
+        for _, rc in sub_c.iterrows():
+            obs_val = safe(str(rc.get("Observaciones", "") or ""), 100)
+            pdf.set_fill_color(RS, GS, BS) if alt2 else pdf.set_fill_color(255, 255, 255)
+            pdf.set_text_color(30, 30, 30)
+            pdf.set_font("Helvetica", "", 6)
+            pdf.cell(col_wo[0], 6, safe(rc.get("Titulo", rc.get("Título", "-")), 62), border=1, fill=True)
+            pdf.cell(col_wo[1], 6, safe(rc.get("Estado", "-"), 18), border=1, fill=True)
+            pdf.cell(col_wo[2], 6, safe(rc.get("Prioridad", "-"), 14), border=1, fill=True)
+            pdf.cell(col_wo[3], 6, obs_val, border=1, fill=True)
+            pdf.ln()
+            alt2 = not alt2
+        pdf.ln(3)
 
     return bytes(pdf.output())
 
@@ -911,50 +985,7 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
-    st.markdown(
-        "<div style='font-size:0.68rem;font-weight:700;text-transform:uppercase;"
-        "letter-spacing:0.1em;color:rgba(255,255,255,0.45);padding-bottom:0.4rem;'>"
-        "Filtros</div>",
-        unsafe_allow_html=True,
-    )
-
-    df_full = load_data()
-
-    prioridad_sel = st.multiselect("Prioridad", ["Alta", "Media", "Baja"], default=["Alta", "Media"])
-    afinidad_sel  = st.multiselect("Afinidad", ["Individual", "Empresarial", "Ambos"], default=["Individual", "Empresarial", "Ambos"])
-    estado_sel    = st.multiselect("Estado", ESTADOS_ORDEN, default=[e for e in ESTADOS_ORDEN if e != "Descartada"])
-
-    consultores_csv  = df_full["Consultor"].dropna().unique().tolist()
-    consultores_opts = sorted(set(CONSULTORES + consultores_csv))
-    consultor_sel    = st.multiselect("Consultor", consultores_opts, default=consultores_opts)
-
-    # Regiones agrupadas — al cambiar, auto-popula el filtro País
-    if "_prev_region" not in st.session_state:
-        st.session_state["_prev_region"] = list(REGIONES_GRUPO)
-
-    region_sel = st.multiselect("Región", REGIONES_GRUPO, default=REGIONES_GRUPO)
-
-    # Detectar cambio de región → actualizar país antes de renderizar el widget
-    if sorted(region_sel) != sorted(st.session_state["_prev_region"]):
-        st.session_state["_prev_region"] = list(region_sel)
-        if set(region_sel) == set(REGIONES_GRUPO):
-            st.session_state["sb_pais"] = []
-        else:
-            auto_p: list[str] = []
-            for rg in region_sel:
-                auto_p.extend(REGION_TO_PAISES.get(rg, []))
-            st.session_state["sb_pais"] = sorted(
-                p for p in set(auto_p) if p in TODOS_PAISES
-            )
-
-    # País: todos los países del mundo; sin selección = sin filtro
-    pais_sel = st.multiselect(
-        "País", TODOS_PAISES, key="sb_pais", placeholder="Todos los países…"
-    )
-
-    texto = st.text_input("Buscar", placeholder="UNDP, cacao, agroecología…")
-
-    st.divider()
+    # ── Actualizar datos (arriba) ──────────────────────────────────────────
     st.markdown(
         "<div style='font-size:0.68rem;font-weight:700;text-transform:uppercase;"
         "letter-spacing:0.1em;color:rgba(255,255,255,0.45);padding-bottom:0.4rem;'>"
@@ -989,6 +1020,81 @@ with st.sidebar:
             else:
                 st.error("Error:")
                 st.code((result.stderr or result.stdout)[-1000:])
+
+    st.divider()
+
+    # ── Filtros (abajo, cada uno colapsable) ──────────────────────────────
+    st.markdown(
+        "<div style='font-size:0.68rem;font-weight:700;text-transform:uppercase;"
+        "letter-spacing:0.1em;color:rgba(255,255,255,0.45);padding-bottom:0.4rem;'>"
+        "Filtros</div>",
+        unsafe_allow_html=True,
+    )
+
+    df_full = load_data()
+
+    with st.expander("🎯 Prioridad", expanded=False):
+        prioridad_sel = st.multiselect(
+            "Prioridad", ["Alta", "Media", "Baja"],
+            default=["Alta", "Media", "Baja"],
+            label_visibility="collapsed",
+        )
+
+    with st.expander("🔄 Estado", expanded=False):
+        estado_sel = st.multiselect(
+            "Estado", ESTADOS_ORDEN,
+            default=[e for e in ESTADOS_ORDEN if e != "Descartada"],
+            label_visibility="collapsed",
+        )
+
+    with st.expander("🤝 Afinidad", expanded=False):
+        afinidad_sel = st.multiselect(
+            "Afinidad", ["Individual", "Empresarial", "Ambos"],
+            default=["Individual", "Empresarial", "Ambos"],
+            label_visibility="collapsed",
+        )
+
+    with st.expander("👤 Consultor", expanded=False):
+        consultores_csv  = df_full["Consultor"].dropna().unique().tolist()
+        consultores_opts = sorted(set(CONSULTORES + consultores_csv))
+        consultor_sel    = st.multiselect(
+            "Consultor", consultores_opts,
+            default=consultores_opts,
+            label_visibility="collapsed",
+        )
+
+    with st.expander("🌎 Región", expanded=False):
+        # Regiones agrupadas — al cambiar, auto-popula el filtro País
+        if "_prev_region" not in st.session_state:
+            st.session_state["_prev_region"] = list(REGIONES_GRUPO)
+
+        region_sel = st.multiselect(
+            "Región", REGIONES_GRUPO,
+            default=REGIONES_GRUPO,
+            label_visibility="collapsed",
+        )
+
+        # Detectar cambio de región → actualizar país antes de renderizar el widget
+        if sorted(region_sel) != sorted(st.session_state["_prev_region"]):
+            st.session_state["_prev_region"] = list(region_sel)
+            if set(region_sel) == set(REGIONES_GRUPO):
+                st.session_state["sb_pais"] = []
+            else:
+                auto_p: list[str] = []
+                for rg in region_sel:
+                    auto_p.extend(REGION_TO_PAISES.get(rg, []))
+                st.session_state["sb_pais"] = sorted(
+                    p for p in set(auto_p) if p in TODOS_PAISES
+                )
+
+        pais_sel = st.multiselect(
+            "País", TODOS_PAISES,
+            key="sb_pais",
+            placeholder="Todos los países…",
+            label_visibility="collapsed",
+        )
+
+    texto = st.text_input("🔍 Buscar", placeholder="UNDP, cacao, agroecología…")
 
     st.divider()
     st.markdown(
@@ -1098,7 +1204,7 @@ st.markdown(f"""
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 
-tab1, tab2, tab3, tab4 = st.tabs(["📋  Oportunidades", "📊  Cartera", "✏️  Editar datos", "🤝  Socios Estratégicos"])
+tab1, tab2, tab3, tab4 = st.tabs(["📋  Oportunidades", "📊  Cartera", "📥  Carga manual", "🤝  Socios Estratégicos"])
 
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 1 — OPORTUNIDADES
@@ -1235,7 +1341,7 @@ with tab2:
         if st.button("📄 Generar informe PDF", type="primary", use_container_width=True):
             with st.spinner("Generando informe PDF…"):
                 try:
-                    pdf_bytes = generar_pdf(df_c, hoy)
+                    pdf_bytes = generar_pdf(df_c, load_socios(), hoy)
                     st.session_state["pdf_bytes"] = pdf_bytes
                     st.success("Informe generado. Hacé clic en Descargar.")
                 except Exception as e:

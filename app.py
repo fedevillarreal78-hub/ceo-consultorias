@@ -593,50 +593,29 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
         pdf.cell(40, 6, "-", border=1, fill=True)
         pdf.ln()
 
-    # ── PIPELINE ACTIVO — ALTA PRIORIDAD ─────────────────────────────────────
-    df_alta = df_active[df_active["Prioridad"] == "Alta"]
-    pdf.add_page()
-    pdf.section_title("PIPELINE ACTIVO — ALTA PRIORIDAD", r=180, g=0, b=0)
-    pdf.opps_table(df_alta)
-
-    # ── EN PROCESO ────────────────────────────────────────────────────────────
-    df_proc = df_active[df_active["Estado"].isin(["En análisis", "Postulada"])]
-    pdf.add_page()
-    pdf.section_title(safe("EN PROCESO — EN ANÁLISIS Y POSTULADAS"), r=RM, g=GM, b=BM)
-    pdf.opps_table(df_proc)
-
-    # ── PIPELINE POTENCIAL ────────────────────────────────────────────────────
-    df_pot = df_active[df_active["Estado"] == "Identificada"]
-    pdf.add_page()
-    pdf.section_title("PIPELINE POTENCIAL — IDENTIFICADAS", r=RD, g=GD, b=BD)
-    pdf.opps_table(df_pot)
-
-    # ── GANADAS ───────────────────────────────────────────────────────────────
-    df_gan = df_active[df_active["Estado"] == "Ganada"]
-    if not df_gan.empty:
-        pdf.add_page()
-        pdf.section_title("GANADAS", r=46, g=125, b=50)
-        pdf.opps_table(df_gan)
-
-    # ── SOCIOS ESTRATÉGICOS ───────────────────────────────────────────────────
-    pdf.add_page()
-    pdf.section_title("SOCIOS ESTRATEGICOS DE GRUPO CEO", r=RM, g=GM, b=BM)
+    # ── SOCIOS ESTRATÉGICOS (en resumen ejecutivo) ────────────────────────────
+    pdf.ln(5)
+    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_text_color(RD, GD, BD)
+    pdf.cell(0, 7, "Socios Estrategicos de Grupo CEO", ln=True)
     pdf.socios_table(df_socios_pdf)
 
-    # ── GESTIÓN POR CONSULTOR (con observaciones) ─────────────────────────────
-    pdf.add_page()
-    pdf.section_title("GESTION POR CONSULTOR - DETALLE Y OBSERVACIONES", r=RD, g=GD, b=BD)
+    # ── GESTIÓN POR CONSULTOR (en resumen ejecutivo) ──────────────────────────
+    pdf.ln(5)
+    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_text_color(RD, GD, BD)
+    pdf.cell(0, 7, safe("Gestión por Consultor — Detalle y Observaciones"), ln=True)
     df_asig_pdf = df_active[df_active["Consultor"] != "—"]
     for nombre_c in CONSULTORES[1:]:
         sub_c = df_asig_pdf[df_asig_pdf["Consultor"] == nombre_c]
         if sub_c.empty:
             continue
+        pdf.ln(2)
         pdf.set_font("Helvetica", "B", 8)
         pdf.set_text_color(RD, GD, BD)
         pipe_c = sub_c["Monto estimado (USD)"].sum()
         pipe_s = f" | Pipeline: ${pipe_c:,.0f}" if pipe_c > 0 else ""
         pdf.cell(0, 7, safe(f"  {nombre_c}  ({len(sub_c)} oportunidades{pipe_s})"), ln=True)
-        # Mini-tabla: Título | Estado | Prioridad | Observaciones
         col_wo = [95, 28, 22, 152]
         heads  = ["Titulo", "Estado", "Prioridad", "Observaciones"]
         pdf.set_fill_color(RD, GD, BD)
@@ -657,7 +636,19 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
             pdf.cell(col_wo[3], 6, obs_val, border=1, fill=True)
             pdf.ln()
             alt2 = not alt2
-        pdf.ln(3)
+
+    # ── EN PROCESO ────────────────────────────────────────────────────────────
+    df_proc = df_active[df_active["Estado"].isin(["En análisis", "Postulada"])]
+    pdf.add_page()
+    pdf.section_title(safe("EN PROCESO — EN ANÁLISIS Y POSTULADAS"), r=RM, g=GM, b=BM)
+    pdf.opps_table(df_proc)
+
+    # ── GANADAS ───────────────────────────────────────────────────────────────
+    df_gan = df_active[df_active["Estado"] == "Ganada"]
+    if not df_gan.empty:
+        pdf.add_page()
+        pdf.section_title("GANADAS", r=46, g=125, b=50)
+        pdf.opps_table(df_gan)
 
     return bytes(pdf.output())
 

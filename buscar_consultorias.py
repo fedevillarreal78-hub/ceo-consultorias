@@ -406,6 +406,25 @@ TAVILY_QUERIES = [
     "World Bank agriculture trade policy consultant 2026",
     "request for proposal agricultural policy evaluation LAC 2026",
     "expresión de interés consultoría comercio internacional agropecuario 2026",
+    # ── Fondaciones privadas ─────────────────────────────────────────────
+    "Gates Foundation consultant agriculture food systems Latin America 2026",
+    "Rockefeller Foundation consultancy food agriculture 2026",
+    "GAFSP consultant agriculture food security developing countries 2026",
+    "McKnight Foundation consultant agriculture food 2026",
+    "IKEA Foundation WK Kellogg consultant rural food systems 2026",
+    "Howard Buffett Foundation consultant agriculture 2026",
+    "FFAR Foundation Food Agriculture Research consultant 2026",
+    # ── Sostenibilidad y medio ambiente ─────────────────────────────────
+    "Nature Conservancy WWF consultant agriculture sustainability Latin America 2026",
+    "Rainforest Alliance Solidaridad consultant supply chain agriculture 2026",
+    "Tropical Forest Alliance consultant deforestation agriculture 2026",
+    "ALInvest Verde consultoría agricultura sostenible América Latina 2026",
+    "CropLife Latinoamérica consultoría agricultura 2026",
+    # ── Investigación agropecuaria adicional ────────────────────────────
+    "Alliance Bioversity CIAT consultant position agriculture 2026",
+    "ILRI consultant livestock agriculture developing countries 2026",
+    "IDRC consultant agriculture food systems Canada 2026",
+    "Syngenta Foundation consultant agriculture innovation 2026",
 ]
 
 
@@ -471,6 +490,30 @@ def scrape_tavily(api_key: str) -> list:
                     "oecd.org",
                     "ebrd.com",
                     "eib.org",
+                    # Fondaciones privadas y filantrópicas
+                    "gafspfund.org",
+                    "gatesfoundation.org",
+                    "rockefellerfoundation.org",
+                    "ikeafoundation.org",
+                    "wkkf.org",
+                    "foundationfar.org",
+                    "thehowardgbuffettfoundation.org",
+                    "mcknight.org",
+                    # Sostenibilidad, medioambiente y cadenas de valor
+                    "alinvest-verde.eu",
+                    "sustainable-supplychains.org",
+                    "nature.org",
+                    "worldwildlife.org",
+                    "rainforest-alliance.org",
+                    "solidaridadlatam.org",
+                    "tropicalforestalliance.org",
+                    "croplifela.org",
+                    # Investigación agropecuaria
+                    "alliancebioversityciat.org",
+                    "ilri.org",
+                    "syngentagroup.com",
+                    "idrc-crdi.ca",
+                    "aic.ca",
                 ],
             )
 
@@ -545,6 +588,30 @@ def _org_from_url(url: str) -> str:
         "ebrd.com":              "BERD / EBRD",
         "ec.europa.eu":          "Comisión Europea",
         "wfp.org":               "PMA / WFP",
+        # Fondaciones privadas y filantrópicas
+        "gafspfund.org":                   "GAFSP",
+        "gatesfoundation.org":             "Gates Foundation",
+        "rockefellerfoundation.org":       "Rockefeller Foundation",
+        "ikeafoundation.org":              "IKEA Foundation",
+        "wkkf.org":                        "WK Kellogg Foundation",
+        "foundationfar.org":               "FFAR",
+        "thehowardgbuffettfoundation.org": "Howard G. Buffett Foundation",
+        "mcknight.org":                    "McKnight Foundation",
+        # Sostenibilidad, medioambiente y cadenas de valor
+        "alinvest-verde.eu":               "ALInvest Verde (UE)",
+        "sustainable-supplychains.org":    "SASI / Sustainable Supply Chains",
+        "nature.org":                      "The Nature Conservancy",
+        "worldwildlife.org":               "WWF",
+        "rainforest-alliance.org":         "Rainforest Alliance",
+        "solidaridadlatam.org":            "Solidaridad",
+        "tropicalforestalliance.org":      "Tropical Forest Alliance",
+        "croplifela.org":                  "CropLife Latinoamérica",
+        # Investigación agropecuaria adicional
+        "alliancebioversityciat.org":      "Alliance Bioversity-CIAT",
+        "ilri.org":                        "ILRI",
+        "syngentagroup.com":               "Syngenta Foundation",
+        "idrc-crdi.ca":                    "IDRC",
+        "aic.ca":                          "AIC / Agri-Food Innovation Council",
     }
     for domain, name in mapping.items():
         if domain in url:

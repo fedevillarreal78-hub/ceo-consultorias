@@ -1,0 +1,34 @@
+{
+  "_descripcion": "Criterios de descarte aprendidos de revisiones manuales. Actualizado automáticamente por la app.",
+  "_ultima_actualizacion": "2026-05-23",
+  "_instrucciones": {
+    "señales_exclusion": "Palabras/frases que en título+organización indican que NO es relevante para CEO",
+    "organizaciones_excluidas": "Organizaciones cuyos llamados sistemáticamente no son pertinentes",
+    "patrones_titulo": "Fragmentos de título que indican oportunidades fuera del foco",
+    "regiones_excluidas": "Regiones donde CEO no opera (referencia informativa, no implementada aún en filtrado)"
+  },
+  "señales_exclusion": [
+    "fellowship",
+    "internship",
+    "pasantía",
+    "phd", "ph.d",
+    "academic position",
+    "lecturer", "professor",
+    "driver", "chofer",
+    "security guard",
+    "cleaning services",
+    "it support",
+    "soporte técnico informático",
+    "translation services",
+    "servicios de traducción"
+  ],
+  "organizaciones_excluidas": [],
+  "patrones_titulo": [],
+  "regiones_excluidas": [
+    "África subsahariana",
+    "Asia Central",
+    "Europa del Este",
+    "Medio Oriente"
+  ],
+  "historial_descartes": []
+}

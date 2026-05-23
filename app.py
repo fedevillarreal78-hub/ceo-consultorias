@@ -20,10 +20,16 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-CSV_PATH    = Path(__file__).parent / "oportunidades_consultoria.csv"
-SOCIOS_CSV  = Path(__file__).parent / "socios_estrategicos.csv"
-SCRIPT_PATH = Path(__file__).parent / "buscar_consultorias.py"
-LOGO_PATH   = Path(__file__).parent / "logo_ceo.png"
+CSV_PATH      = Path(__file__).parent / "oportunidades_consultoria.csv"
+SOCIOS_CSV    = Path(__file__).parent / "socios_estrategicos.csv"
+SCRIPT_PATH   = Path(__file__).parent / "buscar_consultorias.py"
+LOGO_PATH     = Path(__file__).parent / "logo_ceo.png"
+CRITERIOS_PATH = Path(__file__).parent / "criterios_aprendidos.json"
+
+# ── GitHub auto-commit (persistencia desde Streamlit Cloud) ───────────────────
+GITHUB_OWNER  = "fedevillarreal78-hub"
+GITHUB_REPO   = "ceo-consultorias"
+GITHUB_BRANCH = "main"
 
 # ── Paleta CEO ─────────────────────────────────────────────────────────────────
 GREEN_DARK   = "#0F2D1F"
@@ -310,6 +316,57 @@ def parse_deadline(raw: str) -> datetime:
                 pass
     return datetime(2099, 12, 31)
 
+def _push_file_to_github(local_path: Path, github_path: str, commit_msg: str) -> bool:
+    """Sube un archivo local al repositorio de GitHub via API REST.
+
+    Requiere GITHUB_TOKEN en variables de entorno o en st.secrets.
+    Silencioso ante errores para no interrumpir la UX.
+    Retorna True si el commit tuvo éxito.
+    """
+    try:
+        token = os.environ.get("GITHUB_TOKEN", "")
+        if not token:
+            try:
+                token = st.secrets.get("GITHUB_TOKEN", "")
+            except Exception:
+                pass
+        if not token:
+            return False
+
+        import requests as _req
+
+        headers = {
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        api_url = (
+            f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}"
+            f"/contents/{github_path}"
+        )
+
+        # Leer contenido del archivo
+        with open(local_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+
+        # Obtener SHA actual del archivo en GitHub (necesario para update)
+        r = _req.get(api_url, headers=headers,
+                     params={"ref": GITHUB_BRANCH}, timeout=10)
+        sha = r.json().get("sha") if r.status_code == 200 else None
+
+        payload: dict = {
+            "message": commit_msg,
+            "content": encoded,
+            "branch": GITHUB_BRANCH,
+        }
+        if sha:
+            payload["sha"] = sha
+
+        resp = _req.put(api_url, json=payload, headers=headers, timeout=20)
+        return resp.status_code in (200, 201)
+    except Exception:
+        return False
+
+
 def save_df(df: pd.DataFrame) -> None:
     export_cols = [
         "Título", "Organización", "Tipo", "Región", "País",
@@ -319,6 +376,10 @@ def save_df(df: pd.DataFrame) -> None:
     ]
     df[[c for c in export_cols if c in df.columns]].to_csv(CSV_PATH, index=False)
     st.cache_data.clear()
+    # Sincronizar con GitHub para persistir cambios desde Streamlit Cloud
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+    _push_file_to_github(CSV_PATH, "oportunidades_consultoria.csv",
+                         f"Auto-save: cambios en oportunidades ({ts})")
 
 # ── Socios estratégicos ────────────────────────────────────────────────────────
 
@@ -340,6 +401,34 @@ def load_socios() -> pd.DataFrame:
 def save_socios(df: pd.DataFrame) -> None:
     df[SOCIOS_COLS].to_csv(SOCIOS_CSV, index=False)
     st.cache_data.clear()
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+    _push_file_to_github(SOCIOS_CSV, "socios_estrategicos.csv",
+                         f"Auto-save: cambios en socios estratégicos ({ts})")
+
+
+# ── Criterios aprendidos de descarte ─────────────────────────────────────────
+
+import json as _json
+
+def load_criterios() -> dict:
+    """Carga criterios aprendidos de descarte desde archivo JSON."""
+    if not CRITERIOS_PATH.exists():
+        return {"señales_exclusion": [], "organizaciones_excluidas": [],
+                "tipos_excluidos": [], "patrones_titulo": []}
+    try:
+        with open(CRITERIOS_PATH, encoding="utf-8") as f:
+            return _json.load(f)
+    except Exception:
+        return {"señales_exclusion": [], "organizaciones_excluidas": [],
+                "tipos_excluidos": [], "patrones_titulo": []}
+
+def save_criterios(criterios: dict) -> None:
+    """Guarda criterios aprendidos y sincroniza con GitHub."""
+    with open(CRITERIOS_PATH, "w", encoding="utf-8") as f:
+        _json.dump(criterios, f, ensure_ascii=False, indent=2)
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+    _push_file_to_github(CRITERIOS_PATH, "criterios_aprendidos.json",
+                         f"Auto-save: criterios de descarte actualizados ({ts})")
 
 # ── PDF ───────────────────────────────────────────────────────────────────────
 

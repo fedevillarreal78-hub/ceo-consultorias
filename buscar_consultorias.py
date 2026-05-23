@@ -203,14 +203,35 @@ def is_relevant(text: str, url: str = "") -> bool:
     return True
 
 
-def load_existing_ids() -> set:
+def load_criterios_aprendidos() -> dict:
+    """Carga criterios de descarte aprendidos desde el archivo JSON compartido con la app."""
+    criterios_path = BASE_DIR / "criterios_aprendidos.json"
+    if not criterios_path.exists():
+        return {}
+    try:
+        with open(criterios_path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def load_existing_ids() -> tuple[set, set]:
+    """Retorna (todos_los_ids, ids_descartadas).
+
+    - todos_los_ids: evita duplicados en general.
+    - ids_descartadas: oportunidades marcadas como Descartadas; jamás deben re-agregarse.
+    """
     if not CSV_PATH.exists():
-        return set()
-    ids = set()
+        return set(), set()
+    all_ids = set()
+    discarded_ids = set()
     with open(CSV_PATH, encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            ids.add(make_id(row.get("Título", ""), row.get("Organización", "")))
-    return ids
+            oid = make_id(row.get("Título", ""), row.get("Organización", ""))
+            all_ids.add(oid)
+            if row.get("Estado", "").strip() == "Descartada":
+                discarded_ids.add(oid)
+    return all_ids, discarded_ids
 
 
 def append_to_csv(opportunities: list) -> None:
@@ -1082,14 +1103,45 @@ def run_all_scrapers() -> list:
     return all_results
 
 
-def filter_new(candidates: list, existing_ids: set) -> list:
+def filter_new(candidates: list, existing_ids: set, discarded_ids: set | None = None) -> list:
+    """Filtra candidatos para quedarse solo con los realmente nuevos.
+
+    - existing_ids: todos los IDs ya en el CSV (evita duplicados).
+    - discarded_ids: IDs marcados como Descartada; NUNCA se re-agregan.
+    - Aplica además criterios aprendidos desde la app (criterios_aprendidos.json).
+    """
+    if discarded_ids is None:
+        discarded_ids = set()
+
+    # Cargar criterios aprendidos de descarte
+    criterios = load_criterios_aprendidos()
+    señales_extra    = [s.lower() for s in criterios.get("señales_exclusion", [])]
+    orgs_excluidas   = [o.lower() for o in criterios.get("organizaciones_excluidas", [])]
+    patrones_titulo  = [p.lower() for p in criterios.get("patrones_titulo", [])]
+
     seen_this_run = set()
     new_ones = []
     for opp in candidates:
         oid = make_id(opp["Título"], opp["Organización"])
-        if oid not in existing_ids and oid not in seen_this_run:
-            seen_this_run.add(oid)
-            new_ones.append(opp)
+
+        # Exclusiones duras
+        if oid in existing_ids or oid in discarded_ids or oid in seen_this_run:
+            continue
+
+        # Criterios aprendidos: señales en título+org
+        texto = (opp.get("Título", "") + " " + opp.get("Organización", "")).lower()
+        if any(s in texto for s in señales_extra):
+            log(f"  [criterio aprendido] Señal de exclusión en: {opp['Título'][:60]}", "  ⛔ ")
+            continue
+        if any(o in opp.get("Organización", "").lower() for o in orgs_excluidas):
+            log(f"  [criterio aprendido] Org excluida: {opp.get('Organización','')[:50]}", "  ⛔ ")
+            continue
+        if any(p in opp.get("Título", "").lower() for p in patrones_titulo):
+            log(f"  [criterio aprendido] Patrón en título: {opp['Título'][:60]}", "  ⛔ ")
+            continue
+
+        seen_this_run.add(oid)
+        new_ones.append(opp)
     return new_ones
 
 
@@ -1173,8 +1225,8 @@ def main() -> None:
     print("\n" + "\n".join(banner) + "\n")
 
     log("Cargando oportunidades previas del CSV...")
-    existing_ids = load_existing_ids()
-    log(f"{len(existing_ids)} oportunidades ya conocidas.")
+    existing_ids, discarded_ids = load_existing_ids()
+    log(f"{len(existing_ids)} oportunidades ya conocidas ({len(discarded_ids)} descartadas — bloqueadas permanentemente).")
     print()
 
     tavily_active = bool(os.environ.get("TAVILY_API_KEY", "").strip())
@@ -1185,7 +1237,7 @@ def main() -> None:
     print()
 
     log(f"Total bruto recuperado : {len(all_found)} registros.")
-    new_opps = filter_new(all_found, existing_ids)
+    new_opps = filter_new(all_found, existing_ids, discarded_ids)
     log(f"Oportunidades nuevas   : {len(new_opps)}")
     print()
 

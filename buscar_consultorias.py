@@ -214,13 +214,43 @@ def load_existing_ids() -> set:
 
 
 def append_to_csv(opportunities: list) -> None:
+    """Agrega nuevas oportunidades al CSV preservando TODAS las columnas existentes.
+
+    Si el CSV ya existe, se leen sus columnas actuales (que pueden incluir Estado,
+    Consultor, Observaciones, Votos descarte, etc.) y se usan como fieldnames para
+    que las filas nuevas no corrompan el archivo ni pierdan datos previos.
+    """
     file_exists = CSV_PATH.exists()
+
+    if file_exists:
+        # Leer el encabezado actual del CSV para preservar todas sus columnas
+        with open(CSV_PATH, encoding="utf-8", newline="") as f:
+            reader = csv.reader(f)
+            try:
+                fieldnames = next(reader)
+            except StopIteration:
+                fieldnames = list(CSV_COLUMNS)
+    else:
+        fieldnames = list(CSV_COLUMNS)
+
+    # Valores por defecto para columnas que buscar_consultorias.py no genera
+    defaults = {
+        "Estado": "Identificada",
+        "Monto estimado (USD)": "",
+        "Consultor": "—",
+        "Observaciones": "",
+        "Socio vinculado": "",
+        "Votos descarte": "",
+        "País": "—",
+    }
+
     with open(CSV_PATH, "a", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore")
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
         if not file_exists:
             writer.writeheader()
         for opp in opportunities:
-            writer.writerow(opp)
+            row = {**defaults, **opp}
+            writer.writerow(row)
 
 
 def classify(title: str, org: str) -> tuple:

@@ -26,16 +26,17 @@ SCRIPT_PATH = Path(__file__).parent / "buscar_consultorias.py"
 LOGO_PATH   = Path(__file__).parent / "logo_ceo.png"
 
 # ── Paleta CEO ─────────────────────────────────────────────────────────────────
-GREEN_DARK   = "#1A3D2E"
-GREEN_MID    = "#3A7D58"
-GREEN_ACCENT = "#4CAF82"
-GREEN_LIGHT  = "#6DB86B"
-BG_SAGE      = "#EEF6EE"
-BG_HERO_FROM = "#C8E8CA"
-BG_HERO_TO   = "#88C5B0"
+GREEN_DARK   = "#0F2D1F"
+GREEN_MID    = "#2D6A4F"
+GREEN_ACCENT = "#40916C"
+GREEN_LIGHT  = "#52B788"
+BG_SAGE      = "#F0F7F2"
+BG_HERO_FROM = "#D8EFE1"
+BG_HERO_TO   = "#95C9B4"
 WHITE        = "#FFFFFF"
-TEXT_BODY    = "#3D3D3D"
-BORDER_LIGHT = "#D4EAD6"
+TEXT_BODY    = "#2C3E35"
+BORDER_LIGHT = "#C8E0CF"
+SURFACE      = "#FAFCFB"
 
 # Prioridades
 COLOR_ALTA  = {"bg": "#FFE5E5", "border": "#D32F2F", "badge": "🔴"}
@@ -52,6 +53,7 @@ ESTADO_CHIPS = {
     "Descartada":   {"bg": "#FFEBEE", "color": "#B71C1C"},
 }
 ESTADOS_ORDEN = ["Identificada", "En análisis", "Postulada", "Ganada", "Descartada"]
+ESTADOS_SELECCIONABLES = [e for e in ESTADOS_ORDEN if e != "Descartada"]
 
 # Perfiles de afinidad
 AFINIDAD_OPCIONES = [
@@ -883,7 +885,7 @@ st.markdown(f"""
   }}
   .ceo-hero::before {{
     content: 'CEO'; position: absolute; right: -20px; top: -30px;
-    font-size: 9rem; font-weight: 800; color: rgba(26,61,46,0.06);
+    font-size: 9rem; font-weight: 800; color: rgba(15,45,31,0.05);
     letter-spacing: -4px; pointer-events: none; line-height: 1;
   }}
   .ceo-hero-logo img {{ height: 56px; width: auto; }}
@@ -933,57 +935,69 @@ st.markdown(f"""
 
   /* ── Cards ── */
   .opp-card {{
-    background: {WHITE}; border-radius: 14px; border: 1px solid {BORDER_LIGHT};
-    padding: 0.9rem 1.1rem 0.75rem; margin-bottom: 0.35rem;
-    box-shadow: 0 1px 5px rgba(26,61,46,0.07);
+    background: {SURFACE};
+    border: 1px solid {BORDER_LIGHT};
+    border-left: 4px solid {GREEN_ACCENT};
+    border-radius: 0 12px 12px 0;
+    padding: 1rem 1.2rem 0.75rem;
+    margin-bottom: 0.7rem;
     transition: box-shadow 0.2s ease, transform 0.15s ease;
-    border-left-width: 4px; border-left-style: solid;
+    box-shadow: 0 1px 3px rgba(15,45,31,0.06);
   }}
-  .opp-card:hover {{ box-shadow: 0 4px 16px rgba(26,61,46,0.12); transform: translateY(-1px); }}
+  .opp-card:hover {{
+    box-shadow: 0 6px 20px rgba(15,45,31,0.1);
+    transform: translateY(-2px);
+  }}
   .opp-title {{
-    font-size: 0.95rem; font-weight: 600; color: {GREEN_DARK};
-    margin-bottom: 0.4rem; line-height: 1.35;
+    font-size: 0.97rem; font-weight: 700; color: {GREEN_DARK};
+    margin-bottom: 0.35rem; line-height: 1.4; letter-spacing: -0.01em;
   }}
   .opp-title-descartada {{
-    font-size: 0.95rem; font-weight: 600; color: #9E9E9E;
-    margin-bottom: 0.4rem; line-height: 1.35; text-decoration: line-through;
+    font-size: 0.97rem; font-weight: 500; color: #9E9E9E;
+    margin-bottom: 0.35rem; line-height: 1.4; text-decoration: line-through;
+    opacity: 0.7;
   }}
   .opp-meta {{
-    display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem;
-    font-size: 0.77rem; color: {TEXT_BODY}; margin-bottom: 0.4rem;
+    display: flex; flex-wrap: wrap; gap: 0.25rem 1rem;
+    font-size: 0.76rem; color: #5A7A65; margin-bottom: 0.45rem;
   }}
-  .opp-meta span {{ display: flex; align-items: center; gap: 0.22rem; }}
-  .opp-meta .monto-meta {{ color: #0D47A1; font-weight: 600; }}
-  .opp-chips {{ display: flex; flex-wrap: wrap; gap: 0.28rem; align-items: center; }}
+  .opp-meta span {{ display: flex; align-items: center; gap: 0.2rem; }}
+  .opp-meta .monto-meta {{ color: #1A56A0; font-weight: 700; }}
+  .opp-chips {{ display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }}
   .opp-obs {{
-    margin-top: 0.45rem; padding: 0.3rem 0.55rem;
-    background: #F9FBF9; border-left: 3px solid {GREEN_ACCENT};
-    border-radius: 0 6px 6px 0; font-size: 0.76rem; color: {TEXT_BODY};
-    line-height: 1.4;
+    margin-top: 0.5rem; padding: 0.35rem 0.7rem;
+    background: linear-gradient(90deg, rgba(64,145,108,0.08) 0%, transparent 100%);
+    border-left: 3px solid {GREEN_ACCENT};
+    border-radius: 0 6px 6px 0; font-size: 0.75rem; color: {TEXT_BODY};
+    line-height: 1.45; font-style: italic;
   }}
   .chip {{
-    display: inline-block; padding: 2px 9px; border-radius: 20px;
-    font-size: 0.71rem; font-weight: 600; letter-spacing: 0.02em;
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: 0.70rem; font-weight: 600; letter-spacing: 0.025em;
+    transition: opacity 0.15s;
   }}
   .chip-dark  {{ background: {GREEN_DARK}; color: {WHITE}; }}
   .chip-mid   {{ background: {BG_SAGE}; color: {GREEN_DARK}; border: 1px solid {BORDER_LIGHT}; }}
-  .chip-alta  {{ background: #FFE5E5; color: #B71C1C; }}
-  .chip-media {{ background: #FFF8E1; color: #E65100; }}
-  .chip-baja  {{ background: #E8F5E9; color: #1B5E20; }}
-  .chip-monto   {{ background: #E8F4FD; color: #0D47A1; border: 1px solid #BBDEFB; }}
+  .chip-alta  {{ background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }}
+  .chip-media {{ background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }}
+  .chip-baja  {{ background: #DCFCE7; color: #166534; border: 1px solid #BBF7D0; }}
+  .chip-monto {{ background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-weight: 700; }}
   .chip-discard {{ background: #FFF3E0; color: #BF360C; border: 1px solid #FFCC80; }}
   .chip-link  {{
     background: {GREEN_DARK}; color: {WHITE} !important;
-    text-decoration: none; padding: 3px 11px; border-radius: 20px;
-    font-size: 0.71rem; font-weight: 600;
+    text-decoration: none; padding: 3px 12px; border-radius: 20px;
+    font-size: 0.70rem; font-weight: 600; letter-spacing: 0.02em;
+    transition: background 0.15s ease;
   }}
-  .chip-link:hover {{ background: {GREEN_MID}; }}
+  .chip-link:hover {{ background: {GREEN_MID} !important; }}
 
   /* Section headers */
   .section-header {{
-    font-size: 0.77rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.08em; color: {GREEN_MID};
-    padding: 0.55rem 0 0.35rem; border-bottom: 2px solid {BORDER_LIGHT}; margin-bottom: 0.75rem;
+    font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.1em; color: {GREEN_MID};
+    padding: 0.6rem 0 0.35rem;
+    border-bottom: 2px solid {BORDER_LIGHT};
+    margin-bottom: 0.8rem; margin-top: 0.6rem;
   }}
 
   /* Empty state */
@@ -992,15 +1006,24 @@ st.markdown(f"""
 
   /* Cartera cards */
   .cartera-card {{
-    background: {WHITE}; border-radius: 12px; border: 1px solid {BORDER_LIGHT};
-    padding: 1rem 1.2rem; margin-bottom: 0.75rem;
-    box-shadow: 0 1px 4px rgba(26,61,46,0.07);
-    border-left: 4px solid {GREEN_ACCENT};
+    background: {SURFACE};
+    border: 1px solid {BORDER_LIGHT};
+    border-radius: 14px;
+    padding: 1.1rem 1.3rem;
+    margin-bottom: 0.8rem;
+    box-shadow: 0 2px 8px rgba(15,45,31,0.07);
+    transition: box-shadow 0.2s ease;
   }}
-  .cartera-name {{ font-size: 1rem; font-weight: 700; color: {GREEN_DARK}; margin-bottom: 0.4rem; }}
-  .cartera-stats {{ display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem; font-size: 0.82rem; color: {TEXT_BODY}; margin-bottom: 0.5rem; }}
-  .cartera-stats span {{ display: flex; align-items: center; gap: 0.3rem; font-weight: 500; }}
-  .cartera-estados {{ display: flex; flex-wrap: wrap; gap: 0.25rem; }}
+  .cartera-card:hover {{ box-shadow: 0 6px 20px rgba(15,45,31,0.12); }}
+  .cartera-name {{
+    font-size: 1rem; font-weight: 700; color: {GREEN_DARK};
+    margin-bottom: 0.45rem; letter-spacing: -0.01em;
+  }}
+  .cartera-stats {{
+    display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem;
+    font-size: 0.78rem; color: {TEXT_BODY}; margin-bottom: 0.5rem;
+  }}
+  .cartera-estados {{ display: flex; flex-wrap: wrap; gap: 0.3rem; }}
 
   /* Download */
   .stDownloadButton button {{
@@ -1084,6 +1107,32 @@ st.markdown(f"""
       background: {GREEN_ACCENT}; border-radius: 6px;
       padding: 2px 8px; font-size: 1rem; font-weight: 700; line-height: 1.4;
     }}
+  }}
+
+  /* Botón primario global */
+  .stButton > button[kind="primary"] {{
+    background: linear-gradient(135deg, {GREEN_DARK} 0%, {GREEN_MID} 100%) !important;
+    color: {WHITE} !important; border: none !important;
+    border-radius: 8px !important; font-weight: 600 !important;
+    font-size: 0.84rem !important; letter-spacing: 0.02em !important;
+    padding: 0.45rem 1rem !important;
+    box-shadow: 0 2px 6px rgba(15,45,31,0.2) !important;
+    transition: all 0.2s ease !important;
+  }}
+  .stButton > button[kind="primary"]:hover {{
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(15,45,31,0.3) !important;
+  }}
+  /* Botón secundario global */
+  .stButton > button[kind="secondary"] {{
+    background: {SURFACE} !important; color: {GREEN_DARK} !important;
+    border: 1.5px solid {BORDER_LIGHT} !important;
+    border-radius: 8px !important; font-weight: 600 !important;
+    font-size: 0.84rem !important;
+  }}
+  .stButton > button[kind="secondary"]:hover {{
+    border-color: {GREEN_ACCENT} !important;
+    color: {GREEN_MID} !important;
   }}
 </style>
 """, unsafe_allow_html=True)
@@ -1395,9 +1444,10 @@ if nav_page == "📋  Oportunidades":
             consultor  = row.get("Consultor", "—")
             monto      = float(row.get("Monto estimado (USD)", 0) or 0)
             obs_val    = str(row.get("Observaciones", "") or "")
-            votos_val  = str(row.get("Votos descarte", "") or "")
-            votos_list = [v.strip() for v in votos_val.split("|") if v.strip()]
+            votos_raw  = str(row.get("Votos descarte", "") or "")
+            votos_list = [v.strip() for v in votos_raw.split("|") if v.strip()]
             n_votos    = len(votos_list)
+            VOTOS_NECESARIOS = 2
 
             descartada = (estado == "Descartada")
             title_cls  = "opp-title-descartada" if descartada else "opp-title"
@@ -1408,10 +1458,23 @@ if nav_page == "📋  Oportunidades":
             consultor_chip = f'<span class="chip chip-mid">👤 {esc(consultor)}</span>' if consultor and consultor != "—" else ""
             monto_meta     = f'<span class="monto-meta">💵 ${monto:,.0f} USD</span>' if monto > 0 else '<span style="color:#aaa;">💵 Monto: —</span>'
             obs_html       = f'<div class="opp-obs">📝 {esc(obs_val)}</div>' if obs_val else ""
-            votos_chip     = f'<span class="chip chip-discard">⛔ {n_votos}/3 propuestas de descarte</span>' if n_votos > 0 and not descartada else ""
+            votos_chip     = f'<span class="chip chip-discard">⛔ {n_votos}/{VOTOS_NECESARIOS} propuestas de descarte</span>' if n_votos > 0 and not descartada else ""
+
+            votos_html = ""
+            if n_votos > 0 and estado != "Descartada":
+                votos_html = (
+                    f'<div style="margin-top:0.4rem;font-size:0.74rem;color:#B71C1C;font-weight:600;">'
+                    f'⛔ {n_votos}/{VOTOS_NECESARIOS} votos para descarte'
+                    f' — {esc(", ".join(votos_list))}</div>'
+                )
+            elif estado == "Descartada" and votos_list:
+                votos_html = (
+                    f'<div style="margin-top:0.4rem;font-size:0.74rem;color:#B71C1C;">'
+                    f'⛔ Descartada por consenso — {esc(", ".join(votos_list))}</div>'
+                )
 
             st.markdown(f"""
-<div class="opp-card" style="border-left-color:{'#B71C1C' if descartada else GREEN_ACCENT}; background:{'#FFF5F5' if descartada else '#FAFAFA'};">
+<div class="opp-card" style="border-left-color:{'#B71C1C' if descartada else GREEN_ACCENT}; background:{'#FFF5F5' if descartada else SURFACE};">
   <div class="{title_cls}">{esc(titulo)}</div>
   <div class="opp-meta">
     <span>🏛 <strong>{esc(org)}</strong></span>
@@ -1424,16 +1487,17 @@ if nav_page == "📋  Oportunidades":
     {pais_chip}{monto_chip}{consultor_chip}{votos_chip}{link_chip}
   </div>
   {obs_html}
+  {votos_html}
 </div>
 """, unsafe_allow_html=True)
 
             # Edición inline — un solo guardado (sin opción "Descartada" en el selector)
-            ESTADOS_EDITABLES = [e for e in ESTADOS_ORDEN if e != "Descartada"]
             if not descartada:
                 ec1, ec2 = st.columns([1, 1])
                 with ec1:
-                    cur_est = ESTADOS_EDITABLES.index(estado) if estado in ESTADOS_EDITABLES else 0
-                    new_estado = st.selectbox("Estado", ESTADOS_EDITABLES, index=cur_est,
+                    opciones_estado = ESTADOS_ORDEN if estado == "Descartada" else ESTADOS_SELECCIONABLES
+                    cur_est = opciones_estado.index(estado) if estado in opciones_estado else 0
+                    new_estado = st.selectbox("Estado", opciones_estado, index=cur_est,
                                               key=f"est_{orig_idx}", label_visibility="collapsed")
                 with ec2:
                     cur_con = CONSULTORES.index(consultor) if consultor in CONSULTORES else 0
@@ -1452,34 +1516,27 @@ if nav_page == "📋  Oportunidades":
                     save_df(df_all_editable)
                     st.rerun()
 
-                # ── Proponer descarte (requiere consenso de 3 personas) ─────
-                votos_label = f"⛔ Proponer descarte — {n_votos}/3 votos"
-                with st.expander(votos_label, expanded=(n_votos > 0)):
-                    if votos_list:
-                        st.markdown(
-                            f"**Propuestas registradas:** {', '.join(votos_list)}\n\n"
-                            f"{'⚠️ Se necesita 1 voto más para descartarla definitivamente.' if n_votos == 2 else ''}"
-                        )
-                    disponibles = [c for c in CONSULTORES if c != "—" and c not in votos_list]
-                    if disponibles:
-                        vc1, vc2 = st.columns([4, 1])
-                        with vc1:
-                            voto_nombre = st.selectbox(
-                                "Quién propone el descarte",
-                                disponibles,
-                                key=f"vsel_{orig_idx}",
-                                label_visibility="collapsed",
-                            )
-                        with vc2:
-                            if st.button("⛔ Votar", key=f"voto_{orig_idx}", use_container_width=True):
-                                nuevos_votos = votos_list + [voto_nombre]
-                                nuevo_estado = "Descartada" if len(nuevos_votos) >= 3 else estado
-                                df_all_editable.at[orig_idx, "Votos descarte"] = "|".join(nuevos_votos)
-                                df_all_editable.at[orig_idx, "Estado"]         = nuevo_estado
-                                save_df(df_all_editable)
-                                st.rerun()
+                # ── Votación para descarte ──────────────────────────────────────
+                with st.expander(f"⛔ Proponer descarte ({n_votos}/{VOTOS_NECESARIOS} votos)", expanded=False):
+                    consultores_votantes = [c for c in CONSULTORES if c != "—"]
+                    ya_votaron = set(votos_list)
+                    disponibles = [c for c in consultores_votantes if c not in ya_votaron]
+                    if not disponibles:
+                        st.info("Ya todos los votos disponibles han sido emitidos.")
                     else:
-                        st.caption("Todos los consultores ya han emitido su voto.")
+                        voto_nuevo = st.selectbox(
+                            "¿Quién propone descartar?",
+                            disponibles,
+                            key=f"voto_{orig_idx}",
+                            label_visibility="collapsed",
+                        )
+                        if st.button("✋ Registrar voto de descarte", key=f"bvoto_{orig_idx}"):
+                            nuevos_votos = votos_list + [voto_nuevo]
+                            df_all_editable.at[orig_idx, "Votos descarte"] = "|".join(nuevos_votos)
+                            if len(nuevos_votos) >= VOTOS_NECESARIOS:
+                                df_all_editable.at[orig_idx, "Estado"] = "Descartada"
+                            save_df(df_all_editable)
+                            st.rerun()
             else:
                 # Card definitivamente descartada — mostrar quiénes votaron + opción de restaurar
                 st.markdown(

@@ -1,34 +1,95 @@
 {
-  "_descripcion": "Criterios de descarte aprendidos de revisiones manuales. Actualizado automáticamente por la app.",
+  "_descripcion": "Criterios de descarte aprendidos de revisiones manuales. Actualizado 2026-05-23.",
   "_ultima_actualizacion": "2026-05-23",
-  "_instrucciones": {
-    "señales_exclusion": "Palabras/frases que en título+organización indican que NO es relevante para CEO",
-    "organizaciones_excluidas": "Organizaciones cuyos llamados sistemáticamente no son pertinentes",
-    "patrones_titulo": "Fragmentos de título que indican oportunidades fuera del foco",
-    "regiones_excluidas": "Regiones donde CEO no opera (referencia informativa, no implementada aún en filtrado)"
-  },
   "señales_exclusion": [
-    "fellowship",
-    "internship",
-    "pasantía",
-    "phd", "ph.d",
-    "academic position",
-    "lecturer", "professor",
-    "driver", "chofer",
-    "security guard",
-    "cleaning services",
-    "it support",
-    "soporte técnico informático",
-    "translation services",
-    "servicios de traducción"
+    "fellowship", "internship", "pasantías universitarias", "pasantía",
+    "phd", "ph.d", "academic position", "lecturer", "professor",
+    "canteen", "food and non-food supply",
+    "school milk",
+    "makerspace", "remodeling",
+    "innovation hub ict", "ict equipment",
+    "plastics innovation",
+    "insurance hackathon", "insurance innovation",
+    "customs outreach", "trade facilitation",
+    "vehicles para", "vehículos para", "adquisición de vehículos",
+    "pistas rurales", "rural roads",
+    "serviços gráficos", "servicios gráficos", "graphic communication",
+    "comunicación institucional",
+    "constitutional expert", "constitutional reform",
+    "legislative & policy advisor", "legislative advisor",
+    "care economy reform", "gender-responsive fiscal",
+    "citizen engagement digital platform",
+    "social enterprises - r2", "manufacturing - r2",
+    "human rights" ,
+    "driver", "chofer", "security guard", "cleaning services",
+    "it support", "soporte técnico informático",
+    "translation services", "servicios de traducción"
   ],
   "organizaciones_excluidas": [],
-  "patrones_titulo": [],
-  "regiones_excluidas": [
-    "África subsahariana",
-    "Asia Central",
-    "Europa del Este",
-    "Medio Oriente"
+  "patrones_titulo": [
+    "[pdf]",
+    "home - en -", "home - es -", "home |",
+    "iica: home",
+    "sub-regional office for",
+    "regional representative |",
+    "secretariat |",
+    "partners |",
+    "vendors with total procurement"
   ],
-  "historial_descartes": []
+  "regiones_excluidas_referencia": [
+    "África subsahariana", "Asia Central", "Europa del Este",
+    "Medio Oriente", "Asia del Sur", "Asia del Sudeste"
+  ],
+  "paises_undp_excluidos": [
+    "AFG", "PAK", "NPL", "BGD", "IND", "LKA", "MMR",
+    "IDN", "PHL", "THA", "VNM", "KHM", "LAO", "MYS",
+    "NGA", "SEN", "ETH", "UGA", "KEN", "TZA", "MOZ",
+    "ZWE", "ZAF", "BWA", "LSO", "SWZ", "SLE", "LBR",
+    "GHA", "CMR", "COD", "COG", "MDG", "MWI", "ZMB",
+    "UKR", "MDA", "ALB", "GEO", "ARM", "AZE", "KAZ",
+    "TJK", "UZB", "KGZ", "TKM", "BLR", "MNE", "MKD",
+    "TUN", "MAR", "DZA", "EGY", "LBY", "SDN", "YEM",
+    "DEN", "DNK", "SWE", "NOR", "FIN", "FRA", "DEU",
+    "GBR", "ITA", "ESP"
+  ],
+  "url_patterns_excluidos": [
+    "iica.int/es/prensa/", "iica.int/en/press/",
+    "iica.int/es/noticias/", "iica.int/en/news/",
+    "iica.int/es/newsletter/",
+    "fao.org/americas/news/", "fao.org/americas/about",
+    "fao.org/americas/partners", "fao.org/americas/interviews",
+    "fao.org/americas/about-us/fao-in-the-region",
+    "iadb.org/en/blog/", "iadb.org/en/news-media/",
+    "iadb.org/en/who-we-are/",
+    "wto.org/english/thewto_e/",
+    "agriculture.ec.europa.eu",
+    "fao.org/newsroom/", "fao.org/media/docs/",
+    "fao.org/cfs/plenary/", "fao.org/cfs/about/",
+    "openknowledge.fao.org", "faolex.fao.org",
+    "fao.org/4/", "fao.org/fileadmin/",
+    "fao.org/in-action/", "fao.org/connect-private-sector/search/detail",
+    "fao.org/rangelands", "fao.org/investment-centre/latest/news",
+    "fao.org/social-protection/", "fao.org/elsalvador/fao-en-elsalvador/ar",
+    "fao.org/americas/about-us/regional-representative",
+    "iadb.org/en/who-we-are/country-offices/",
+    "iadb.org/en/who-we-are/topics/",
+    "worldbank.org/en/topic/", "worldbank.org/en/about/",
+    "worldbank.org/en/who-we-are/",
+    "financesone.worldbank.org/project-procurement"
+  ],
+  "historial_descartes": [
+    {
+      "fecha": "2026-05-23",
+      "revisor": "Federico Villareal",
+      "cantidad": 141,
+      "motivos_principales": [
+        "80 noticias/artículos/páginas sin convocatoria real (sin fecha límite)",
+        "35 oportunidades UNDP de oficinas fuera de ALC (África, Asia, Europa del Este)",
+        "Temáticas ajenas al foco CEO: comunicación institucional, legal/constitucional, vehículos, infraestructura vial, catering, escuela leche UE",
+        "Duplicados del mismo llamado con ligeras variaciones en título u organización"
+      ],
+      "conservadas": 18,
+      "observacion": "Primera revisión sistemática completa del pipeline"
+    }
+  ]
 }

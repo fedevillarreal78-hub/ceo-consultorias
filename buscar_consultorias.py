@@ -94,19 +94,62 @@ EXCLUSION_SIGNALS = [
 
 # Patrones en la URL que indican noticias o contenido editorial
 EXCLUSION_URL_PATTERNS = [
-    # Inglés
+    # Inglés genérico
     "/news/", "/blog/", "/press/", "/media/", "/stories/",
     "/opinion/", "/report/", "/publication/", "/document/",
     "/event/", "/training/", "/workshop/", "/webinar/",
     "/update/", "/article/", "/feature/", "/resource/",
-    # Español (faltan en muchos sitios de OI)
+    # Español genérico
     "/prensa/", "/noticias/", "/noticia/", "/newsletter/",
     "/publicacion/", "/publicaciones/", "/eventos/", "/evento/",
     "/capacitacion/", "/taller/", "/webinars/",
     # Redes sociales y anclas
     "twitter.com", "linkedin.com", "youtube.com", "facebook.com",
     "mailto:", "#",
+    # IICA — páginas de noticias y notas de prensa (aprendido 2026-05-23)
+    "iica.int/es/prensa/", "iica.int/en/press/",
+    "iica.int/es/noticias/", "iica.int/en/news/",
+    "iica.int/es/newsletter/",
+    # FAO — páginas institucionales y publicaciones no-convocatorias
+    "fao.org/americas/news/", "fao.org/americas/about",
+    "fao.org/americas/partners", "fao.org/americas/interviews",
+    "fao.org/newsroom/", "fao.org/media/docs/",
+    "fao.org/cfs/plenary/", "fao.org/cfs/about/",
+    "openknowledge.fao.org", "faolex.fao.org",
+    "fao.org/4/", "fao.org/fileadmin/",
+    "fao.org/in-action/", "fao.org/connect-private-sector/search/detail",
+    "fao.org/rangelands", "fao.org/investment-centre/latest/news",
+    "fao.org/social-protection/",
+    "fao.org/americas/about-us/regional-representative",
+    # IDB/BID — blog, noticias y páginas temáticas
+    "iadb.org/en/blog/", "iadb.org/en/news-media/",
+    "iadb.org/en/who-we-are/country-offices/",
+    "iadb.org/en/who-we-are/topics/",
+    # Banco Mundial — páginas temáticas e institucionales
+    "worldbank.org/en/topic/", "worldbank.org/en/about/",
+    "financesone.worldbank.org/project-procurement",
+    # Otros organismos — páginas institucionales
+    "wto.org/english/thewto_e/",
+    "agriculture.ec.europa.eu",
 ]
+
+# Códigos de país UNDP fuera del foco ALC de CEO (aprendido 2026-05-23)
+# Las oportunidades de estas oficinas tienen muy baja afinidad con el mandato CEO
+UNDP_COUNTRY_EXCLUSIONS = {
+    # África subsahariana
+    "AFG", "PAK", "NPL", "BGD", "IND", "LKA", "MMR",
+    "IDN", "PHL", "THA", "VNM", "KHM", "LAO", "MYS",
+    "NGA", "SEN", "ETH", "UGA", "KEN", "TZA", "MOZ",
+    "ZWE", "ZAF", "BWA", "LSO", "SWZ", "SLE", "LBR",
+    "GHA", "CMR", "COD", "COG", "MDG", "MWI", "ZMB",
+    # Europa del Este y Asia Central
+    "UKR", "MDA", "ALB", "GEO", "ARM", "AZE",
+    "TJK", "UZB", "KGZ", "TKM",
+    # Norte de África y Medio Oriente
+    "TUN", "MAR", "DZA", "EGY", "LBY", "SDN", "YEM",
+    # Europa occidental (sedes OI, no operativas ALC)
+    "DNK", "SWE", "NOR", "FIN", "BLR", "MNE", "MKD",
+}
 
 CSV_COLUMNS = [
     "Título", "Organización", "Tipo", "Región",
@@ -170,19 +213,36 @@ def clean_deadline(raw: str) -> str:
     return raw.strip()[:20]
 
 
-def is_relevant(text: str, url: str = "") -> bool:
+def is_undp_excluded_country(org: str) -> bool:
+    """Retorna True si la organización UNDP corresponde a una oficina fuera del foco ALC.
+
+    El nombre de org sigue el patrón: 'UNDP – UNDP-COD/COUNTRY_NAME'
+    Extrae el código de 3 letras y lo cruza con UNDP_COUNTRY_EXCLUSIONS.
+    """
+    m = re.search(r"UNDP-([A-Z]{3})/", org)
+    if m:
+        return m.group(1) in UNDP_COUNTRY_EXCLUSIONS
+    return False
+
+
+def is_relevant(text: str, url: str = "", org: str = "") -> bool:
     """
     Devuelve True solo si el texto corresponde a una convocatoria de consultoría
     relevante al sector agroalimentario/desarrollo rural.
 
-    Criterios (los tres deben cumplirse):
+    Criterios (todos deben cumplirse):
     1. Contiene al menos una palabra del sector (KEYWORDS)
     2. Contiene al menos una señal de convocatoria (PROCUREMENT_SIGNALS)
     3. No contiene señales de noticias/informes (EXCLUSION_SIGNALS)
     4. La URL no apunta a secciones editoriales (EXCLUSION_URL_PATTERNS)
+    5. Si es UNDP, la oficina de país debe estar en foco ALC (UNDP_COUNTRY_EXCLUSIONS)
     """
     t = text.lower()
     u = url.lower()
+
+    # Criterio 5: filtro geográfico UNDP (aprendido 2026-05-23)
+    if org and is_undp_excluded_country(org):
+        return False
 
     # Criterio 4: URL excluida
     if u and any(p in u for p in EXCLUSION_URL_PATTERNS):

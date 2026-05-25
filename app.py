@@ -1897,7 +1897,8 @@ elif nav_page == "📊  Pipeline CEO":
                     mo2  = float(r.get("Monto estimado (USD)", 0) or 0)
                     mo2s = f'<span class="chip chip-monto">💰 ${mo2:,.0f} USD</span>' if mo2 > 0 else ""
                     sv_val = str(r.get("Socio vinculado", "") or "")
-                    sv_chip = f'<span class="chip chip-mid">🤝 {esc(sv_val)}</span>' if sv_val and sv_val != "—" else ""
+                    _sv_lista_chip = [s.strip() for s in sv_val.split("|") if s.strip() and s.strip() != "—"]
+                    sv_chip = " ".join(f'<span class="chip chip-mid">🤝 {esc(s)}</span>' for s in _sv_lista_chip)
                     st.markdown(f"""
 <div class="opp-card" style="border-left-color:{GREEN_ACCENT};background:#FAFAFA;margin-bottom:0.3rem;">
   <div class="opp-title">{esc(r.get('Título',''))}</div>
@@ -1911,25 +1912,47 @@ elif nav_page == "📊  Pipeline CEO":
   </div>
 </div>
 """, unsafe_allow_html=True)
-                    # Socio vinculado
-                    _socios_nombres = ["—"] + load_socios()["Nombre"].tolist()
-                    _sv_actual = str(r.get("Socio vinculado", "") or "—")
-                    _sv_idx = _socios_nombres.index(_sv_actual) if _sv_actual in _socios_nombres else 0
-                    col_sv, col_sv_save = st.columns([4, 1])
-                    with col_sv:
-                        sv_new = st.selectbox(
-                            "Socio vinculado",
-                            _socios_nombres,
-                            index=_sv_idx,
-                            key=f"sv_{idx2}",
-                            label_visibility="collapsed",
-                        )
-                    with col_sv_save:
-                        if sv_new != _sv_actual:
-                            if st.button("💾", key=f"ssv_{idx2}", help="Guardar socio vinculado"):
-                                df_c.at[idx2, "Socio vinculado"] = sv_new if sv_new != "—" else ""
-                                save_df(df_c)
-                                st.rerun()
+                    # Socios vinculados — múltiples (separados por " | ")
+                    _sv_raw   = str(r.get("Socio vinculado", "") or "")
+                    _sv_lista = [s.strip() for s in _sv_raw.split("|") if s.strip() and s.strip() != "—"]
+                    _todos_socios = load_socios()["Nombre"].tolist()
+                    st.caption("🤝 Socios vinculados")
+                    if _sv_lista:
+                        for _sv_nombre in _sv_lista:
+                            col_sn, col_sr = st.columns([6, 1])
+                            with col_sn:
+                                st.markdown(
+                                    f'<span class="chip chip-mid" style="display:inline-block;margin:2px 0;">🤝 {esc(_sv_nombre)}</span>',
+                                    unsafe_allow_html=True,
+                                )
+                            with col_sr:
+                                if st.button("✕", key=f"rm_sv_{idx2}_{_sv_nombre}",
+                                             help=f"Quitar a {_sv_nombre}"):
+                                    nueva = [s for s in _sv_lista if s != _sv_nombre]
+                                    df_c.at[idx2, "Socio vinculado"] = " | ".join(nueva)
+                                    save_df(df_c)
+                                    st.rerun()
+                    else:
+                        st.markdown("<span style='color:#888;font-size:0.85rem;font-style:italic;'>Sin socios asignados</span>", unsafe_allow_html=True)
+                    _disponibles = ["— Agregar socio —"] + [s for s in _todos_socios if s not in _sv_lista]
+                    if len(_disponibles) > 1:
+                        col_add, col_add_btn = st.columns([5, 1])
+                        with col_add:
+                            _sv_agregar = st.selectbox(
+                                "Agregar socio",
+                                _disponibles,
+                                index=0,
+                                key=f"add_sv_{idx2}",
+                                label_visibility="collapsed",
+                            )
+                        with col_add_btn:
+                            if _sv_agregar != "— Agregar socio —":
+                                if st.button("➕", key=f"btn_add_sv_{idx2}",
+                                             help=f"Vincular a {_sv_agregar}"):
+                                    nueva = _sv_lista + [_sv_agregar]
+                                    df_c.at[idx2, "Socio vinculado"] = " | ".join(nueva)
+                                    save_df(df_c)
+                                    st.rerun()
                     obs_val = str(r.get("Observaciones", "") or "")
                     col_obs, col_save_obs = st.columns([5, 1])
                     with col_obs:

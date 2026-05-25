@@ -383,7 +383,8 @@ def save_df(df: pd.DataFrame) -> None:
 
 # ── Socios estratégicos ────────────────────────────────────────────────────────
 
-SOCIOS_COLS = ["Nombre", "Experiencia", "Responsable", "Actividades", "Resultados"]
+SOCIOS_COLS = ["Nombre", "Categoría", "Experiencia", "Responsable", "Actividades", "Resultados"]
+SOCIOS_CATEGORIAS = ["Estratégico", "Profesional Asociado"]
 
 @st.cache_data(ttl=60)
 def load_socios() -> pd.DataFrame:
@@ -393,9 +394,10 @@ def load_socios() -> pd.DataFrame:
     df.columns = df.columns.str.strip()
     for col in SOCIOS_COLS:
         if col not in df.columns:
-            df[col] = ""
+            # Migración: socios existentes sin Categoría → Estratégico por defecto
+            df[col] = "Estratégico" if col == "Categoría" else ""
         else:
-            df[col] = df[col].fillna("")
+            df[col] = df[col].fillna("Estratégico" if col == "Categoría" else "")
     return df
 
 def save_socios(df: pd.DataFrame) -> None:
@@ -1334,7 +1336,7 @@ with st.sidebar:
             "📋  Oportunidades",
             "📊  Pipeline CEO",
             "📥  Carga manual de oportunidades",
-            "🤝  Socios Estratégicos",
+            "🤝  Socios",
         ],
         label_visibility="collapsed",
         key="nav_page",
@@ -2053,79 +2055,77 @@ elif nav_page == "📥  Carga manual de oportunidades":
         )
 
 # ════════════════════════════════════════════════════════════════════════════
-# TAB 4 — SOCIOS ESTRATÉGICOS
+# TAB 4 — SOCIOS
 # ════════════════════════════════════════════════════════════════════════════
 
-elif nav_page == "🤝  Socios Estratégicos":
+elif nav_page == "🤝  Socios":
     df_socios = load_socios()
 
     # ── Header ───────────────────────────────────────────────────────────────
-    sc_total = len(df_socios)
-    sc_responsables = df_socios["Responsable"].nunique() if sc_total > 0 else 0
+    n_estrat = len(df_socios[df_socios["Categoría"] == "Estratégico"])
+    n_asoc   = len(df_socios[df_socios["Categoría"] == "Profesional Asociado"])
+    sc_responsables = df_socios["Responsable"].nunique() if len(df_socios) > 0 else 0
 
     st.markdown(f"""
 <div style="background:{GREEN_DARK};border-radius:14px;padding:1.1rem 1.6rem;margin-bottom:1.2rem;
      display:flex;flex-wrap:wrap;gap:1.2rem 2.5rem;align-items:center;">
   <div>
-    <div style="color:rgba(255,255,255,0.55);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">Socios registrados</div>
-    <div style="color:{WHITE};font-size:2rem;font-weight:700;line-height:1.1;">{sc_total}</div>
+    <div style="color:rgba(255,255,255,0.55);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">Socios estratégicos</div>
+    <div style="color:{WHITE};font-size:2rem;font-weight:700;line-height:1.1;">{n_estrat}</div>
+  </div>
+  <div>
+    <div style="color:rgba(255,255,255,0.55);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">Profesionales asociados</div>
+    <div style="color:#4CAF82;font-size:2rem;font-weight:700;line-height:1.1;">{n_asoc}</div>
   </div>
   <div>
     <div style="color:rgba(255,255,255,0.55);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">Responsables activos</div>
-    <div style="color:#4CAF82;font-size:2rem;font-weight:700;line-height:1.1;">{sc_responsables}</div>
+    <div style="color:#95C9B4;font-size:2rem;font-weight:700;line-height:1.1;">{sc_responsables}</div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-    # ── Listado de socios ─────────────────────────────────────────────────────
-    st.markdown('<div class="section-header">Red de socios</div>', unsafe_allow_html=True)
+    # ── Pestañas por categoría ────────────────────────────────────────────────
+    tab_estrat, tab_asoc = st.tabs(["🤝 Socios Estratégicos", "👥 Profesionales Asociados"])
 
-    if df_socios.empty:
-        st.markdown("""
+    def _render_socios_lista(df_cat: pd.DataFrame, prefix: str) -> None:
+        """Renderiza el listado y edición de socios de una categoría."""
+        if df_cat.empty:
+            st.markdown("""
 <div class="empty-state">
   <div class="icon">🤝</div>
-  <p>Aún no hay socios estratégicos registrados. Usá el formulario de abajo para agregar el primero.</p>
+  <p>Aún no hay registros en esta categoría. Usá el formulario de abajo para agregar el primero.</p>
 </div>""", unsafe_allow_html=True)
-    else:
-        for idx, row in df_socios.iterrows():
+            return
+        for idx, row in df_cat.iterrows():
             nombre      = str(row.get("Nombre",      "") or "Sin nombre")
             experiencia = str(row.get("Experiencia", "") or "")
             responsable = str(row.get("Responsable", "—") or "—")
             actividades = str(row.get("Actividades", "") or "")
             resultados  = str(row.get("Resultados",  "") or "")
-
             exp_preview = (experiencia[:120] + "…") if len(experiencia) > 120 else experiencia
-
             st.markdown(f"""
 <div class="socio-card">
   <div class="socio-name">🤝 {esc(nombre)}</div>
   <span class="socio-tag">👤 {esc(responsable)}</span>
   <div class="socio-field-label">Área de experiencia y aporte a CEO</div>
   <div class="socio-field-val">{esc(exp_preview)}</div>
-</div>
-""", unsafe_allow_html=True)
-
+</div>""", unsafe_allow_html=True)
             with st.expander(f"Ver detalle completo y editar — {nombre}"):
                 ef1, ef2 = st.columns([3, 1])
                 with ef1:
-                    e_nombre = st.text_input(
-                        "Nombre del socio", value=nombre, key=f"sn_{idx}")
-                    e_exp = st.text_area(
-                        "Área de experiencia y aporte a CEO",
-                        value=experiencia, key=f"se_{idx}", height=90)
-                    e_act = st.text_area(
-                        "Actividades desarrolladas",
-                        value=actividades, key=f"sa_{idx}", height=90)
-                    e_res = st.text_area(
-                        "Resultados esperados de su incorporación",
-                        value=resultados, key=f"sr_{idx}", height=90)
+                    e_nombre = st.text_input("Nombre", value=nombre, key=f"{prefix}sn_{idx}")
+                    e_exp = st.text_area("Área de experiencia y aporte a CEO",
+                                        value=experiencia, key=f"{prefix}se_{idx}", height=90)
+                    e_act = st.text_area("Actividades desarrolladas",
+                                        value=actividades, key=f"{prefix}sa_{idx}", height=90)
+                    e_res = st.text_area("Resultados esperados",
+                                        value=resultados, key=f"{prefix}sr_{idx}", height=90)
                 with ef2:
                     resp_idx = CONSULTORES.index(responsable) if responsable in CONSULTORES else 0
-                    e_resp = st.selectbox(
-                        "Responsable del contacto", CONSULTORES,
-                        index=resp_idx, key=f"srp_{idx}")
+                    e_resp = st.selectbox("Responsable", CONSULTORES,
+                                         index=resp_idx, key=f"{prefix}srp_{idx}")
                     st.write("")
-                    if st.button("💾 Guardar cambios", key=f"ssave_{idx}",
+                    if st.button("💾 Guardar", key=f"{prefix}ssave_{idx}",
                                  type="primary", use_container_width=True):
                         df_socios.at[idx, "Nombre"]      = e_nombre.strip()
                         df_socios.at[idx, "Experiencia"] = e_exp.strip()
@@ -2136,22 +2136,31 @@ elif nav_page == "🤝  Socios Estratégicos":
                         st.success("¡Cambios guardados!")
                         st.rerun()
                     st.write("")
-                    if st.button("🗑 Eliminar socio", key=f"sdel_{idx}",
+                    if st.button("🗑 Eliminar", key=f"{prefix}sdel_{idx}",
                                  use_container_width=True):
-                        df_socios = df_socios.drop(index=idx).reset_index(drop=True)
+                        df_socios.drop(index=idx, inplace=True)
+                        df_socios.reset_index(drop=True, inplace=True)
                         save_socios(df_socios)
                         st.rerun()
 
+    with tab_estrat:
+        _render_socios_lista(
+            df_socios[df_socios["Categoría"] == "Estratégico"], "e_")
+
+    with tab_asoc:
+        _render_socios_lista(
+            df_socios[df_socios["Categoría"] == "Profesional Asociado"], "a_")
+
     # ── Formulario de alta ────────────────────────────────────────────────────
     st.divider()
-    st.markdown('<div class="section-header">➕ Agregar nuevo socio estratégico</div>',
+    st.markdown('<div class="section-header">➕ Agregar nuevo socio</div>',
                 unsafe_allow_html=True)
 
     with st.form("form_nuevo_socio", clear_on_submit=True):
         nf1, nf2 = st.columns([3, 1])
         with nf1:
             ns_nombre = st.text_input(
-                "Nombre del socio *",
+                "Nombre *",
                 placeholder="Nombre completo de la persona u organización")
             ns_exp = st.text_area(
                 "Área de experiencia y aporte a CEO *",
@@ -2159,13 +2168,14 @@ elif nav_page == "🤝  Socios Estratégicos":
                 height=95)
             ns_act = st.text_area(
                 "Actividades desarrolladas",
-                placeholder="Reuniones realizadas, presentaciones, proyectos colaborados, talleres…",
+                placeholder="Reuniones realizadas, presentaciones, proyectos colaborados…",
                 height=85)
             ns_res = st.text_area(
-                "Resultados esperados de su incorporación",
+                "Resultados esperados",
                 placeholder="Contratos posibles, alianzas estratégicas, conocimiento compartido…",
                 height=85)
         with nf2:
+            ns_cat  = st.selectbox("Categoría *", SOCIOS_CATEGORIAS, index=0)
             ns_resp = st.selectbox("Responsable del contacto", CONSULTORES, index=0)
             st.write("")
             st.markdown(
@@ -2173,16 +2183,17 @@ elif nav_page == "🤝  Socios Estratégicos":
                 unsafe_allow_html=True)
 
         ns_submitted = st.form_submit_button(
-            "✅ Agregar socio estratégico", type="primary", use_container_width=True)
+            "✅ Agregar", type="primary", use_container_width=True)
 
     if ns_submitted:
         if not ns_nombre.strip():
-            st.error("El campo **Nombre del socio** es obligatorio.")
+            st.error("El campo **Nombre** es obligatorio.")
         elif not ns_exp.strip():
             st.error("El campo **Área de experiencia** es obligatorio.")
         else:
             nuevo_socio = {
                 "Nombre":      ns_nombre.strip(),
+                "Categoría":   ns_cat,
                 "Experiencia": ns_exp.strip(),
                 "Responsable": ns_resp,
                 "Actividades": ns_act.strip(),
@@ -2191,5 +2202,5 @@ elif nav_page == "🤝  Socios Estratégicos":
             df_socios_upd = pd.concat(
                 [df_socios, pd.DataFrame([nuevo_socio])], ignore_index=True)
             save_socios(df_socios_upd)
-            st.success(f"✅ **{ns_nombre.strip()}** agregado como socio estratégico.")
+            st.success(f"✅ **{ns_nombre.strip()}** agregado como {ns_cat}.")
             st.rerun()

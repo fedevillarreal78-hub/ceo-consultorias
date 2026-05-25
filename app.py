@@ -1296,6 +1296,19 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
+    # ── Usuario activo + logout ────────────────────────────────────────────
+    st.markdown(
+        f"<div style='font-size:0.72rem;color:rgba(255,255,255,0.5);text-align:center;"
+        f"padding-bottom:0.4rem;'>👤 {usuario_activo}</div>",
+        unsafe_allow_html=True,
+    )
+    if st.button("Cerrar sesión", key="logout_btn", use_container_width=True):
+        st.session_state["autenticado"]    = False
+        st.session_state["usuario_activo"] = None
+        st.rerun()
+
+    st.divider()
+
     # ── Pipeline CEO — sección destacada ──────────────────────────────────
     if st.button(
         "📊  Pipeline CEO",
@@ -1447,17 +1460,6 @@ with st.sidebar:
                 st.error("Error:")
                 st.code((result.stderr or result.stdout)[-1000:])
 
-    st.divider()
-    # ── Usuario activo + logout ────────────────────────────────────────────
-    st.markdown(
-        f"<div style='font-size:0.72rem;color:rgba(255,255,255,0.55);text-align:center;"
-        f"padding-bottom:0.3rem;'>👤 {usuario_activo}</div>",
-        unsafe_allow_html=True,
-    )
-    if st.button("Cerrar sesión", key="logout_btn", use_container_width=True):
-        st.session_state["autenticado"]    = False
-        st.session_state["usuario_activo"] = None
-        st.rerun()
     st.markdown(
         f"<div style='font-size:0.7rem;color:rgba(255,255,255,0.25);text-align:center;"
         f"margin-top:0.4rem;'>grupo-ceo.com · {date.today().year}</div>",

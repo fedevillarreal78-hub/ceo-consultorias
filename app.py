@@ -1233,7 +1233,7 @@ def _check_login() -> bool:
     Retorna True si el usuario está autenticado (o si no hay secrets configurados).
     """
     try:
-        usuarios = st.secrets.get("usuarios", {})
+        usuarios = dict(st.secrets.get("usuarios", {}))
     except Exception:
         usuarios = {}
 
@@ -1415,9 +1415,10 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    _default_key = (
-        st.secrets.get("TAVILY_API_KEY", "") if hasattr(st, "secrets") else ""
-    ) or os.environ.get("TAVILY_API_KEY", "")
+    try:
+        _default_key = st.secrets.get("TAVILY_API_KEY", "") or os.environ.get("TAVILY_API_KEY", "")
+    except Exception:
+        _default_key = os.environ.get("TAVILY_API_KEY", "")
 
     tavily_key = st.text_input("Tavily API Key", type="password", value=_default_key)
 

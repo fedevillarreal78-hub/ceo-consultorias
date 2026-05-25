@@ -1605,27 +1605,47 @@ if nav_page == "📋  Oportunidades":
                     save_df(df_all_editable)
                     st.rerun()
 
-                # ── Votación para descarte ──────────────────────────────────────
-                with st.expander(f"⛔ Proponer descarte ({n_votos}/{VOTOS_NECESARIOS} votos)", expanded=False):
-                    consultores_votantes = [c for c in CONSULTORES if c != "—"]
+                # ── Descarte: lógica diferenciada según estado ─────────────────
+                consultores_votantes = [c for c in CONSULTORES if c != "—"]
+
+                if estado == "En análisis":
+                    # Descarte directo: el analista ya investigó, puede descartar solo
+                    with st.expander("⛔ Descartar esta oportunidad", expanded=False):
+                        st.caption("Al estar en análisis, quien investiga puede descartarla directamente.")
+                        ya_votaron = set(votos_list)
+                        disponibles_d = [c for c in consultores_votantes if c not in ya_votaron]
+                        if not disponibles_d:
+                            st.info("Ya se registró un descarte.")
+                        else:
+                            quien_descarta = st.selectbox(
+                                "¿Quién descarta?", disponibles_d,
+                                key=f"quien_d_{orig_idx}", label_visibility="collapsed",
+                            )
+                            if st.button("⛔ Descartar definitivamente", key=f"bdes_{orig_idx}",
+                                         use_container_width=True, type="primary"):
+                                df_all_editable.at[orig_idx, "Estado"] = "Descartada"
+                                df_all_editable.at[orig_idx, "Votos descarte"] = quien_descarta
+                                save_df(df_all_editable)
+                                st.rerun()
+                else:
+                    # Identificada / Postulada / Ganada → sistema de 2 votos
                     ya_votaron = set(votos_list)
                     disponibles = [c for c in consultores_votantes if c not in ya_votaron]
-                    if not disponibles:
-                        st.info("Ya todos los votos disponibles han sido emitidos.")
-                    else:
-                        voto_nuevo = st.selectbox(
-                            "¿Quién propone descartar?",
-                            disponibles,
-                            key=f"voto_{orig_idx}",
-                            label_visibility="collapsed",
-                        )
-                        if st.button("✋ Registrar voto de descarte", key=f"bvoto_{orig_idx}"):
-                            nuevos_votos = votos_list + [voto_nuevo]
-                            df_all_editable.at[orig_idx, "Votos descarte"] = "|".join(nuevos_votos)
-                            if len(nuevos_votos) >= VOTOS_NECESARIOS:
-                                df_all_editable.at[orig_idx, "Estado"] = "Descartada"
-                            save_df(df_all_editable)
-                            st.rerun()
+                    with st.expander(f"⛔ Proponer descarte ({n_votos}/{VOTOS_NECESARIOS} votos)", expanded=False):
+                        if not disponibles:
+                            st.info("Ya todos los votos disponibles han sido emitidos.")
+                        else:
+                            voto_nuevo = st.selectbox(
+                                "¿Quién propone descartar?", disponibles,
+                                key=f"voto_{orig_idx}", label_visibility="collapsed",
+                            )
+                            if st.button("✋ Registrar voto de descarte", key=f"bvoto_{orig_idx}"):
+                                nuevos_votos = votos_list + [voto_nuevo]
+                                df_all_editable.at[orig_idx, "Votos descarte"] = "|".join(nuevos_votos)
+                                if len(nuevos_votos) >= VOTOS_NECESARIOS:
+                                    df_all_editable.at[orig_idx, "Estado"] = "Descartada"
+                                save_df(df_all_editable)
+                                st.rerun()
             else:
                 # Card definitivamente descartada — mostrar quiénes votaron + opción de restaurar
                 st.markdown(

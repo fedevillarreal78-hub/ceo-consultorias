@@ -1226,6 +1226,64 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
+# ── Autenticación ─────────────────────────────────────────────────────────────
+
+def _check_login() -> bool:
+    """Verifica credenciales contra st.secrets['usuarios'].
+    Retorna True si el usuario está autenticado (o si no hay secrets configurados).
+    """
+    try:
+        usuarios = st.secrets.get("usuarios", {})
+    except Exception:
+        usuarios = {}
+
+    if not usuarios:
+        # Sin secrets configurados (desarrollo local): sin restricción
+        st.session_state.setdefault("usuario_activo", "Federico Villareal")
+        return True
+
+    if st.session_state.get("autenticado"):
+        return True
+
+    # Pantalla de login
+    col_l, col_c, col_r = st.columns([1, 1.2, 1])
+    with col_c:
+        if LOGO_B64:
+            st.markdown(
+                f"<div style='text-align:center;padding:2rem 0 1rem'>"
+                f"<img src='data:image/png;base64,{LOGO_B64}' style='height:52px;'>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+        st.markdown(
+            "<h3 style='text-align:center;color:#0F2D1F;margin-bottom:1.5rem;'>"
+            "Acceso · Grupo CEO</h3>",
+            unsafe_allow_html=True,
+        )
+        with st.form("login_form"):
+            usuario_input = st.text_input("Usuario", placeholder="tu nombre de usuario")
+            clave_input   = st.text_input("Contraseña", type="password", placeholder="••••••••")
+            submitted     = st.form_submit_button("Ingresar", use_container_width=True, type="primary")
+
+        if submitted:
+            clave_correcta = usuarios.get(usuario_input.strip(), "")
+            if clave_correcta and clave_input == clave_correcta:
+                # Buscar el nombre completo del consultor según el usuario
+                nombre_mapa = {k.lower(): k for k in CONSULTORES}
+                nombre_display = nombre_mapa.get(usuario_input.strip().lower(), usuario_input.strip().title())
+                st.session_state["autenticado"]    = True
+                st.session_state["usuario_activo"] = nombre_display
+                st.rerun()
+            else:
+                st.error("Usuario o contraseña incorrectos.")
+
+    return False
+
+if not _check_login():
+    st.stop()
+
+usuario_activo = st.session_state.get("usuario_activo", "—")
+
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
 with st.sidebar:
@@ -1389,9 +1447,19 @@ with st.sidebar:
                 st.code((result.stderr or result.stdout)[-1000:])
 
     st.divider()
+    # ── Usuario activo + logout ────────────────────────────────────────────
     st.markdown(
-        f"<div style='font-size:0.7rem;color:rgba(255,255,255,0.35);text-align:center;'>"
-        f"grupo-ceo.com · {date.today().year}</div>",
+        f"<div style='font-size:0.72rem;color:rgba(255,255,255,0.55);text-align:center;"
+        f"padding-bottom:0.3rem;'>👤 {usuario_activo}</div>",
+        unsafe_allow_html=True,
+    )
+    if st.button("Cerrar sesión", key="logout_btn", use_container_width=True):
+        st.session_state["autenticado"]    = False
+        st.session_state["usuario_activo"] = None
+        st.rerun()
+    st.markdown(
+        f"<div style='font-size:0.7rem;color:rgba(255,255,255,0.25);text-align:center;"
+        f"margin-top:0.4rem;'>grupo-ceo.com · {date.today().year}</div>",
         unsafe_allow_html=True,
     )
 

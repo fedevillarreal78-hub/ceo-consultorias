@@ -1437,30 +1437,42 @@ with st.sidebar:
 
     tavily_key = st.text_input("Tavily API Key", type="password", value=_default_key)
 
-    _is_cloud = not SCRIPT_PATH.exists()
-    if _is_cloud:
-        st.info(
-            "**Actualización automática** vía GitHub Actions (lun/jue 8 AM).\n\n"
-            "Manual: ejecutá `actualizar_y_publicar.sh` desde Terminal.",
-            icon="ℹ️",
-        )
-    else:
-        if st.button("▶ Buscar nuevas oportunidades", use_container_width=True):
-            with st.spinner("Buscando…"):
-                env = os.environ.copy()
-                if tavily_key.strip():
-                    env["TAVILY_API_KEY"] = tavily_key.strip()
-                result = subprocess.run(
-                    [sys.executable, str(SCRIPT_PATH)],
-                    capture_output=True, text=True, env=env,
-                )
+    # El botón siempre está disponible — tanto local como en Streamlit Cloud
+    st.caption("🤖 Actualización automática: lunes y jueves 8 AM (GitHub Actions)")
+    if st.button("▶ Buscar nuevas oportunidades", use_container_width=True):
+        if not SCRIPT_PATH.exists():
+            st.error("No se encontró buscar_consultorias.py en el servidor.")
+        else:
+            prog = st.progress(0, text="Iniciando búsqueda…")
+            env = os.environ.copy()
+            if tavily_key.strip():
+                env["TAVILY_API_KEY"] = tavily_key.strip()
+            prog.progress(10, text="Ejecutando scraper (puede tardar 2-3 min)…")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT_PATH)],
+                capture_output=True, text=True, env=env,
+                timeout=300,
+            )
             if result.returncode == 0:
-                st.success("¡Completado!")
+                prog.progress(80, text="Guardando en GitHub…")
+                ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+                pushed = _push_file_to_github(
+                    CSV_PATH,
+                    "oportunidades_consultoria.csv",
+                    f"Auto-update CSV [{ts} UTC] — búsqueda manual",
+                )
+                prog.progress(100, text="¡Listo!")
+                if pushed:
+                    st.success("✅ Búsqueda completada y CSV guardado en GitHub.")
+                else:
+                    st.success("✅ Búsqueda completada.")
+                    st.warning("⚠️ No se pudo hacer push a GitHub (verificá GITHUB_TOKEN en Secrets).", icon="⚠️")
                 st.cache_data.clear()
                 st.rerun()
             else:
-                st.error("Error:")
-                st.code((result.stderr or result.stdout)[-1000:])
+                prog.empty()
+                st.error("Error en el scraper:")
+                st.code((result.stderr or result.stdout)[-2000:])
 
     st.markdown(
         f"<div style='font-size:0.7rem;color:rgba(255,255,255,0.25);text-align:center;"

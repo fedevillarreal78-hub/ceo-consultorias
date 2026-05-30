@@ -38,29 +38,54 @@ REPORT_PATH = BASE_DIR / "nuevas_esta_semana.txt"
 
 # Palabras del sector — el texto debe contener al menos una
 KEYWORDS = [
-    # Sector agro / alimentario
+    # ── Producción agropecuaria general ──────────────────────────────────
     "agriculture", "food", "rural", "agrifood", "agro", "bioeconomy",
     "food security", "nutrition", "value chain", "agribusiness",
     "agroforestry", "livestock", "crop", "farm", "harvest",
     "agricultura", "alimentaria", "agroalimentar", "bioeconomía",
     "cadenas de valor", "seguridad alimentaria", "desarrollo rural",
-    # Política y comercio
-    "policy", "institutional", "trade", "commerce", "innovation",
+    # Términos agropecuarios frecuentes en TOR latinoamericanas (gap detectado)
+    "agropecuario", "agropecuaria", "agropecuarios", "agropecuarias",
+    "ganadería", "ganadero", "ganaderos", "pecuario", "pecuaria",
+    "pesca", "acuicultura", "pesquero", "pesquera",
+    "agricultura familiar", "pequeños productores", "pequeño productor",
+    "producción agrícola", "producción rural", "sector agrícola",
+    "sanidad vegetal", "sanidad animal", "fitosanitario", "fitosanitaria",
+    "inocuidad alimentaria", "inocuidad de alimentos",
+    "riego", "gestión del agua", "agua para riego", "irrigación",
+    "semillas", "semilla", "fitomejoramiento", "variedades mejoradas",
+    "postcosecha", "post-cosecha", "poscosecha",
+    "extensión agrícola", "extensión rural", "asistencia técnica agrícola",
+    "sistemas alimentarios", "sistema alimentario",
+    "cooperativas agrícolas", "organización de productores",
+    "mercados rurales", "acceso a mercados agrícolas",
+    "cambio climático", "adaptación climática", "resiliencia climática",
+    "agroecología", "agricultura sostenible", "agricultura regenerativa",
+    "cadenas productivas", "cadena de suministro alimentaria",
+    # ── Política, comercio y economía ────────────────────────────────────
+    "policy", "trade", "commerce", "innovation",
     "política", "institucional", "comercio", "innovación", "sostenibilidad",
     "trade policy", "agricultural policy", "política agrícola",
     "comercio internacional", "negociación", "negotiation",
     "política comercial", "mercados agropecuarios",
-    # Econometría / estadística
+    "política agroalimentaria", "política agropecuaria",
+    "aranceles", "barreras comerciales", "acceso a mercados",
+    # ── Econometría y evaluación ─────────────────────────────────────────
     "econometrics", "econometría", "statistical analysis", "análisis estadístico",
     "impact evaluation", "evaluación de impacto", "value chains",
-    # Bioeconomía / ciencia
-    "bioeconomy", "biotechnology", "innovation system", "technology transfer",
-    "sistema de innovación", "transferencia tecnológica", "agro-tech",
-    # Organismos clave nuevos
-    "CGIAR", "IFPRI", "FONTAGRO", "bioversity", "CIAT",
-    "CAF", "BCIE", "GIZ", "AECID",
-    # Geopolítica regional
+    "monitoring and evaluation", "monitoreo y evaluación", "m&e",
+    "baseline study", "línea de base", "línea base",
+    "encuesta agrícola", "encuesta rural", "survey food",
+    # ── Bioeconomía y ciencia ─────────────────────────────────────────────
+    "biotechnology", "innovation system", "technology transfer",
+    "sistema de innovación", "transferencia tecnológica",
+    "bioeconomía", "economía circular", "agricultura de precisión",
+    # ── Organismos clave (incluir en texto captura convocatorias por nombre) ─
+    "CGIAR", "IFPRI", "FONTAGRO", "CIAT", "IICA", "RIMISP",
+    "CAF", "BCIE", "GIZ", "AECID", "PROCASUR",
+    # ── Geopolítica regional ───────────────────────────────────────────────
     "cono sur", "argentina", "mercosur", "lac region",
+    "centroamérica", "caribe", "latinoamérica", "america latina",
 ]
 
 # Señales que confirman que ES una convocatoria — debe haber al menos una
@@ -74,7 +99,7 @@ PROCUREMENT_SIGNALS = [
     "expert", "experto", "especialista", "asesor", "adviser", "advisor",
     "retainer", "short-term", "short term", "home-based", "home based",
     "fee", "honorario", "contrato de servicios",
-    # Terminología adicional de procurement (aprendido 2026-05-30)
+    # Terminología adicional (aprendido 2026-05-30)
     "llamado a consultor", "llamado a consultores",
     "expresión de interés", "expresion de interes", "eoi",
     "manifestación de interés", "manifestacion de interes",
@@ -85,6 +110,37 @@ PROCUREMENT_SIGNALS = [
     "invitation to bid", "invitation for bids",
     "apply now", "deadline for applications", "closing date",
     "fecha límite de postulación", "fecha límite de presentación",
+    # Términos de trabajo técnico frecuentes en TOR (gap detectado 2026-05-30)
+    "specialist", "professional", "officer", "analyst", "técnico",
+    "monitoring", "evaluation", "m&e specialist",
+    "asistencia técnica", "apoyo técnico", "technical assistance",
+    "assignment", "assignment description", "scope of work",
+    "deliverables", "entregables", "productos esperados",
+    "contratación", "contrato", "contract", "hire", "hiring",
+    "open position", "position description", "job description",
+    "postulación", "application", "apply", "solicitud",
+]
+
+# Dominios de procurement confiables: ya filtran por tipo "consultancy/job".
+# Para resultados de estas fuentes solo verificamos keywords del sector,
+# NO señales de procurement (evita descartar TOR con lenguaje técnico).
+TRUSTED_PROCUREMENT_DOMAINS = [
+    "procurement-notices.undp.org",
+    "jobs.undp.org",
+    "reliefweb.int/jobs",
+    "reliefweb.int/vacancies",
+    "ungm.org/public/notice",
+    "ungm.org",
+    "jobs.fao.org",
+    "unjobs.org",
+    "ifad.org/en/consultant",
+    "ifad.org/jobs",
+    "jobs.ilo.org",
+    "devex.com/jobs",
+    "rimisp.org/convocatorias",
+    "rimisp.org/jobs",
+    "procasur.org/convocatorias",
+    "fontagro.org/convocatorias",
 ]
 
 # Frases que indican que NO es una convocatoria — usar frases específicas,
@@ -247,36 +303,41 @@ def is_undp_excluded_country(org: str) -> bool:
 
 def is_relevant(text: str, url: str = "", org: str = "") -> bool:
     """
-    Devuelve True solo si el texto corresponde a una convocatoria de consultoría
+    Devuelve True si el texto corresponde a una convocatoria de consultoría
     relevante al sector agroalimentario/desarrollo rural.
 
-    Criterios (todos deben cumplirse):
-    1. Contiene al menos una palabra del sector (KEYWORDS)
-    2. Contiene al menos una señal de convocatoria (PROCUREMENT_SIGNALS)
-    3. No contiene señales de noticias/informes (EXCLUSION_SIGNALS)
-    4. La URL no apunta a secciones editoriales (EXCLUSION_URL_PATTERNS)
-    5. Si es UNDP, la oficina de país debe estar en foco ALC (UNDP_COUNTRY_EXCLUSIONS)
+    Criterios:
+    A. Siempre: filtro geográfico UNDP, URL excluidas, señales de exclusión
+    B. Portales confiables (ya filtran por tipo "job/consultancy"):
+       → solo necesitan keyword del sector (criterio 1)
+    C. Otras fuentes (Tavily, IDB, etc.):
+       → también necesitan señal de procurement (criterio 2)
     """
     t = text.lower()
     u = url.lower()
 
-    # Criterio 5: filtro geográfico UNDP (aprendido 2026-05-23)
+    # ── A. Filtros duros (aplican siempre) ───────────────────────────────
+    # Filtro geográfico UNDP
     if org and is_undp_excluded_country(org):
         return False
 
-    # Criterio 4: URL excluida
+    # URL excluida (páginas editoriales / institucionales)
     if u and any(p in u for p in EXCLUSION_URL_PATTERNS):
         return False
 
-    # Criterio 3: señales de exclusión en el texto
+    # Señales de exclusión en el texto
     if any(sig in t for sig in EXCLUSION_SIGNALS):
         return False
 
-    # Criterio 1: al menos una palabra del sector
+    # ── B. Portales confiables: solo keyword del sector ──────────────────
+    # Estos portales ya garantizan que el resultado es una convocatoria;
+    # solo verificamos que sea del sector agroalimentario/desarrollo rural.
+    if u and any(d in u for d in TRUSTED_PROCUREMENT_DOMAINS):
+        return any(kw in t for kw in KEYWORDS)
+
+    # ── C. Otras fuentes: keyword + señal de procurement ─────────────────
     if not any(kw in t for kw in KEYWORDS):
         return False
-
-    # Criterio 2: al menos una señal de convocatoria
     if not any(sig in t for sig in PROCUREMENT_SIGNALS):
         return False
 
@@ -953,21 +1014,20 @@ def scrape_undp(session: requests.Session) -> list:
 
 def scrape_fao(session: requests.Session) -> list:
     """
-    FAO: el portal jobs.fao.org tiene SSL antiguo.
-    Alternativas funcionales: FSN Forum (vacantes en HTML plano)
-    y la página de empleos de la Oficina Regional para ALC.
+    FAO: múltiples portales de vacantes y consultorías.
+    Incluye la página específica de consultorías y la sección de evaluación.
     """
     log("FAO Jobs...", "→ ")
     results = []
 
     fao_urls = [
-        # Página de empleos de la Oficina Regional ALC (HTML estático)
-        "https://www.fao.org/americas/jobs/en",
-        # Portal de vacantes FAO en New York
-        "https://www.fao.org/new-york/careers/en",
-        # Portal evaluaciones FAO (publica vacantes de consultores evaluadores)
+        # ── Consultorías FAO — páginas específicas ────────────────────────
+        "https://www.fao.org/employment/vacancies/consultancies/en/",
         "https://www.fao.org/evaluation/about-us/vacancies/en",
-        # jobs.fao.org — SSL antiguo, forzar verify=False
+        # ── Oficina Regional ALC ──────────────────────────────────────────
+        "https://www.fao.org/americas/jobs/en",
+        "https://www.fao.org/americas/jobs/es",
+        # ── Portal global jobs.fao.org — SSL antiguo, verify=False ───────
         "https://jobs.fao.org/careersection/fao_external/jobsearch.ftl?lang=en",
     ]
 
@@ -1192,6 +1252,79 @@ def _dig_json(obj, results: list, seen: set, depth: int = 0) -> None:
             _dig_json(item, results, seen, depth + 1)
 
 
+def scrape_unjobs(session: requests.Session) -> list:
+    """
+    UN Jobs (unjobs.org) — agregador de posiciones del sistema ONU.
+    La sección /categories/consultancy lista exclusivamente consultorías.
+    Cubre UNDP, FAO, IFAD, PMA, OIT, OMS, UNOPS y más en un solo portal.
+    """
+    log("UN Jobs (unjobs.org)...", "→ ")
+    results = []
+
+    urls = [
+        "https://unjobs.org/categories/consultancy",
+        "https://unjobs.org/themes/agriculture",
+        "https://unjobs.org/themes/food-security",
+        "https://unjobs.org/themes/rural-development",
+        "https://unjobs.org/duty_stations/latin-america-and-caribbean",
+    ]
+
+    seen_links: set = set()
+    for url in urls:
+        try:
+            r = session.get(url, timeout=20)
+            r.raise_for_status()
+            soup = BeautifulSoup(r.text, "lxml")
+
+            # UN Jobs lista empleos en <div class="j"> o similar con <a>
+            for a in soup.select(
+                "div.j a, div.job a, h2 a, h3 a, "
+                ".job-title a, a[href*='/jobs/']"
+            ):
+                title = a.get_text(strip=True)
+                href  = a.get("href", "").strip()
+                if not title or len(title) < 10:
+                    continue
+                link = href if href.startswith("http") else f"https://unjobs.org{href}"
+                if link in seen_links:
+                    continue
+
+                # Extraer organización del contexto cercano
+                parent = a.find_parent(["div", "li", "tr"])
+                org = "ONU"
+                if parent:
+                    full_text = parent.get_text(" ", strip=True)
+                    for known in ["UNDP", "FAO", "WFP", "IFAD", "ILO", "WHO",
+                                  "UNOPS", "UNICEF", "UN Women", "UNFPA"]:
+                        if known in full_text:
+                            org = known
+                            break
+
+                if not is_relevant(title + " " + org, link, org):
+                    continue
+
+                seen_links.add(link)
+                tipo, afinidad, prioridad = classify(title, org)
+                results.append({
+                    "Título":       title,
+                    "Organización": org,
+                    "Tipo":         tipo,
+                    "Región":       infer_region(title),
+                    "Fecha límite": "A verificar en UN Jobs",
+                    "Enlace":       link,
+                    "Afinidad":     afinidad,
+                    "Prioridad":    prioridad,
+                })
+
+            time.sleep(1)
+
+        except Exception as e:
+            log(f"Error UN Jobs ({url}): {e}", "  ✗ ")
+
+    log(f"{len(results)} oportunidades relevantes encontradas.", "  ✓ ")
+    return results
+
+
 def scrape_ungm(session: requests.Session) -> list:
     """
     UNGM — UN Global Marketplace (ungm.org).
@@ -1412,6 +1545,7 @@ def run_all_scrapers() -> list:
     scrapers = [
         ("ReliefWeb",       scrape_reliefweb),
         ("UNDP",            scrape_undp),
+        ("UN Jobs",         scrape_unjobs),
         ("UNGM",            scrape_ungm),
         ("FAO",             scrape_fao),
         ("CEPAL",           scrape_cepal),
@@ -1419,13 +1553,23 @@ def run_all_scrapers() -> list:
         ("RIMISP/PROCASUR", scrape_rimisp_procasur),
         ("Devex",           scrape_devex),
     ]
+    counts = {}
     for name, fn in scrapers:
         try:
             found = fn(session)
+            counts[name] = len(found)
             all_results.extend(found)
         except Exception as e:
             log(f"Error no controlado en {name}: {e}", "  ✗ ")
+            counts[name] = 0
         time.sleep(1)
+
+    print()
+    log("── Resultados por fuente ──────────────────────────────", "")
+    for name, n in counts.items():
+        log(f"  {name:<20} {n} oportunidades relevantes", "")
+    if tavily_active:
+        log(f"  {'Tavily':<20} incluido arriba", "")
 
     return all_results
 
@@ -1557,8 +1701,8 @@ def main() -> None:
     print()
 
     tavily_active = bool(os.environ.get("TAVILY_API_KEY", "").strip())
-    n_sources = 9 if tavily_active else 8  # 8 scrapers HTML + Tavily opcional
-    log(f"Iniciando búsqueda en {n_sources} fuentes{' (Tavily activo)' if tavily_active else ''}...")
+    n_sources = 10 if tavily_active else 9  # 9 scrapers HTML + Tavily opcional
+    log(f"Iniciando búsqueda en {n_sources} fuentes{' (Tavily activo — 60 queries)' if tavily_active else ' (sin Tavily — solo scrapers HTML)'}...")
     print()
     all_found = run_all_scrapers()
     print()

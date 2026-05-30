@@ -74,22 +74,42 @@ PROCUREMENT_SIGNALS = [
     "expert", "experto", "especialista", "asesor", "adviser", "advisor",
     "retainer", "short-term", "short term", "home-based", "home based",
     "fee", "honorario", "contrato de servicios",
+    # Terminología adicional de procurement (aprendido 2026-05-30)
+    "llamado a consultor", "llamado a consultores",
+    "expresión de interés", "expresion de interes", "eoi",
+    "manifestación de interés", "manifestacion de interes",
+    "concurso de méritos", "concurso de meritos", "concurso",
+    "postulación abierta", "postulacion abierta",
+    "licitación pública", "licitacion publica",
+    "notice of procurement", "procurement notice",
+    "invitation to bid", "invitation for bids",
+    "apply now", "deadline for applications", "closing date",
+    "fecha límite de postulación", "fecha límite de presentación",
 ]
 
-# Palabras que indican que NO es una convocatoria — descarta el resultado
+# Frases que indican que NO es una convocatoria — usar frases específicas,
+# no palabras sueltas (evitar falsos negativos en TOR legítimas)
 EXCLUSION_SIGNALS = [
-    "informe", "reporte", "report ", " report:", "boletín", "boletin",
-    "newsletter", "press release", "comunicado", "nota de prensa",
-    "news release", "noticias", " news:", "blog", "opinion", "opinión",
-    "artículo", "articulo", "publicación", "publicacion", "publication",
-    "estudio", "análisis", "analisis", "research paper", "working paper",
-    "policy brief", "policy paper", "discussion paper", "fact sheet",
-    "annual report", "informe anual", "memoria anual",
-    "evento", "taller", "webinar", "seminario", "conferencia", "foro",
-    "workshop", " forum", "capacitación", "training course",
-    "lanzamiento", "launch of", "presenta ", "presentación",
-    "donación", "donation", "grant announcement", "award announcement",
-    "resultado", "resultado del", "ganador", "winner",
+    # Informes y publicaciones
+    "press release", "comunicado de prensa", "nota de prensa",
+    "news release", "newsletter", "boletín informativo", "boletin informativo",
+    "research paper", "working paper", "policy brief", "policy paper",
+    "discussion paper", "fact sheet", "issue brief",
+    "informe anual", "annual report", "memoria anual",
+    "publicación reciente", "nueva publicación",
+    # Noticias y blog (frases, no la palabra sola)
+    " news:", "blog post", "blog entry", "opinion piece",
+    "artículo de opinión", "nota periodística",
+    # Eventos sin convocatoria asociada
+    "webinar registration", "register now for", "join our webinar",
+    "save the date", "seminario internacional", "conferencia mundial",
+    "training course registration", "curso en línea",
+    # Anuncios de resultados / premios
+    "grant announcement", "award announcement", "award winner",
+    "resultado del concurso", "ganador del concurso",
+    "donación aprobada", "grant awarded",
+    # Lanzamientos de productos/iniciativas (no contratos)
+    "launch of the", "lanzamiento del programa", "we are pleased to announce",
 ]
 
 # Patrones en la URL que indican noticias o contenido editorial
@@ -484,58 +504,75 @@ def get_session() -> requests.Session:
 # ── Scrapers ─────────────────────────────────────────────────────────────────
 
 TAVILY_QUERIES = [
-    # ── Perfil ICyT, Productividad y Desarrollo ──────────────────────────
-    "consultancy opportunity agriculture Latin America 2025 2026",
-    "consultoría agricultura desarrollo rural América Latina 2026",
-    "food security consultant UNDP FAO LAC 2026",
-    "agrifood policy advisor Latin America Caribbean 2026",
-    "consultancy Caribbean agriculture food security 2026",
-    "consultor Caribe seguridad alimentaria desarrollo rural 2026",
-    "consultant FAO Rome IFAD WFP headquarters 2026 agriculture",
-    "consultancy UNDP Geneva ILO WTO food agriculture policy 2026",
-    "consultant European Union Brussels agriculture rural development 2026",
-    "consultoría organismos internacionales Europa Roma Ginebra 2026",
-    "CGIAR IFPRI consultant agriculture research 2026",
-    "FONTAGRO convocatoria consultoría 2026",
-    "consultoría innovación tecnológica agropecuaria Argentina Cono Sur 2026",
-    "bioeconomy consultant Latin America 2026 UNDP FAO",
-    # ── Perfil Comercio y Geopolítica ────────────────────────────────────
-    "consultoría política comercial agroalimentaria América Latina 2026",
-    "trade policy agriculture consultant BID Banco Mundial CEPAL 2026",
-    "consultor negociaciones internacionales agropecuarias Cono Sur 2026",
-    "agricultural trade policy advisor Argentina LAC 2026",
-    "consultoría econometría evaluación de impacto políticas agrícolas 2026",
-    "consultor comercio internacional productos agropecuarios BID CAF 2026",
-    "GIZ AECID consultoría desarrollo rural América Latina 2026",
-    "consultor CEPAL FAO política agroalimentaria 2026",
-    "AFD Expertise France consultant agriculture commercio 2026",
-    "USAID USDA agriculture trade policy consultant Latin America 2026",
-    "CAF BCIE consultoría agroindustria comercio Argentina 2026",
-    "Alliance Bioversity CIAT consultant position 2026",
-    "consultoría mercados agropecuarios cadenas de valor Argentina 2026",
-    "IICA consultoría convocatoria política agropecuaria 2026",
-    "World Bank agriculture trade policy consultant 2026",
-    "request for proposal agricultural policy evaluation LAC 2026",
-    "expresión de interés consultoría comercio internacional agropecuario 2026",
-    # ── Fondaciones privadas ─────────────────────────────────────────────
-    "Gates Foundation consultant agriculture food systems Latin America 2026",
-    "Rockefeller Foundation consultancy food agriculture 2026",
-    "GAFSP consultant agriculture food security developing countries 2026",
-    "McKnight Foundation consultant agriculture food 2026",
-    "IKEA Foundation WK Kellogg consultant rural food systems 2026",
-    "Howard Buffett Foundation consultant agriculture 2026",
-    "FFAR Foundation Food Agriculture Research consultant 2026",
-    # ── Sostenibilidad y medio ambiente ─────────────────────────────────
-    "Nature Conservancy WWF consultant agriculture sustainability Latin America 2026",
-    "Rainforest Alliance Solidaridad consultant supply chain agriculture 2026",
-    "Tropical Forest Alliance consultant deforestation agriculture 2026",
-    "ALInvest Verde consultoría agricultura sostenible América Latina 2026",
-    "CropLife Latinoamérica consultoría agricultura 2026",
-    # ── Investigación agropecuaria adicional ────────────────────────────
-    "Alliance Bioversity CIAT consultant position agriculture 2026",
-    "ILRI consultant livestock agriculture developing countries 2026",
-    "IDRC consultant agriculture food systems Canada 2026",
-    "Syngenta Foundation consultant agriculture innovation 2026",
+    # ── ICyT, Productividad y Desarrollo — ancladas a procurement ────────
+    "terms of reference agriculture food systems consultant Latin America Caribbean 2026",
+    "individual contractor food security agricultural policy LAC apply deadline 2026",
+    "call for consultancy rural development food Latin America closing date 2026",
+    "consultoría términos de referencia agricultura desarrollo rural ALC 2026",
+    "llamado a consultor individual agropecuario innovación Argentina Cono Sur 2026",
+    "expresión de interés consultoría seguridad alimentaria sistemas agroalimentarios 2026",
+    "CGIAR IFPRI consultant agricultural research terms of reference 2026",
+    "FONTAGRO convocatoria consultoría innovación agropecuaria términos referencia 2026",
+    "bioeconomy individual consultant terms of reference Latin America UNDP FAO 2026",
+    "CIAT Alliance Bioversity consultant terms of reference food agriculture 2026",
+    "IICA convocatoria consultoría política agropecuaria términos de referencia 2026",
+    "consultoría innovación tecnológica transferencia agropecuaria Cono Sur TOR 2026",
+    "RIMISP consultoría desarrollo rural territorial América Latina 2026",
+    "PROCASUR consultoría formación rural capacidades ALC términos referencia 2026",
+    # ── Sedes organismos internacionales en Europa ────────────────────────
+    "individual contractor FAO Rome headquarters food agriculture systems apply 2026",
+    "ILO Geneva consultant rural employment agriculture decent work deadline 2026",
+    "IFAD Rome consultant rural development food security terms of reference 2026",
+    "WFP consultant food supply chain procurement notice 2026",
+    "European Commission consultant agriculture rural development LAC TOR 2026",
+    "consultancy UNDP headquarters Geneva food agriculture policy notice 2026",
+    # ── Comercio y Geopolítica — ancladas a procurement ──────────────────
+    "terms of reference trade policy agriculture consultant BID CEPAL 2026",
+    "individual consultant agricultural trade negotiations LAC apply closing date 2026",
+    "agricultural trade policy advisor Argentina LAC terms of reference 2026",
+    "request for proposal agricultural policy evaluation impact LAC 2026 RFP",
+    "consultoría econometría evaluación de impacto políticas agrícolas TOR 2026",
+    "expresión de interés comercio internacional agropecuario BID CAF CEPAL 2026",
+    "consultor negociaciones agropecuarias internacionales Cono Sur TOR 2026",
+    "World Bank agriculture trade policy consultant terms of reference LAC 2026",
+    "USAID agriculture trade policy consultant terms of reference Latin America 2026",
+    "consultoría mercados agropecuarios cadenas de valor Mercosur convocatoria 2026",
+    # ── Centroamérica (BCIE, SICA, USAID, BID activos en la región) ──────
+    "individual consultant agriculture food security Central America Guatemala Honduras 2026",
+    "consultoría BCIE SICA agricultura Centroamérica términos de referencia 2026",
+    "terms of reference food systems Central America USAID 2026 apply",
+    "consultant agriculture rural development El Salvador Costa Rica Nicaragua 2026",
+    # ── Caribe ────────────────────────────────────────────────────────────
+    "consultancy CARICOM Caribbean food agriculture security terms of reference 2026",
+    "consultant Eastern Caribbean OECS food nutrition agriculture deadline 2026",
+    "terms of reference Caribbean agriculture rural development consultant 2026",
+    # ── Cooperación bilateral ─────────────────────────────────────────────
+    "GIZ consultant agriculture rural development Latin America tender TOR 2026",
+    "AECID convocatoria consultoría agricultura desarrollo rural ALC 2026",
+    "AFD Expertise France consultant agriculture food Latin America terms of reference 2026",
+    "CAF convocatoria consultoría agroindustria comercio América Latina 2026",
+    "SNV consultant agriculture food systems Latin America 2026",
+    "Helvetas consultant rural agriculture Latin America terms of reference 2026",
+    # ── Fondaciones privadas ──────────────────────────────────────────────
+    "Gates Foundation request for proposal agriculture food systems Latin America 2026",
+    "GAFSP consultant agriculture food security request for proposal 2026",
+    "McKnight Foundation Rockefeller consultant agriculture food deadline 2026",
+    "IKEA Foundation WK Kellogg consultant rural food systems apply 2026",
+    "Howard Buffett Foundation consultant agriculture terms of reference 2026",
+    # ── Sostenibilidad y medioambiente ────────────────────────────────────
+    "Nature Conservancy WWF consultant agriculture sustainability LAC terms of reference 2026",
+    "Rainforest Alliance consultant sustainable supply chain agriculture 2026",
+    "Tropical Forest Alliance consultant deforestation agriculture LAC 2026",
+    "ALInvest Verde consultoría agricultura sostenible América Latina convocatoria 2026",
+    # ── Investigación agropecuaria ────────────────────────────────────────
+    "ILRI consultant livestock agriculture developing countries terms of reference 2026",
+    "IDRC consultant agriculture food systems Latin America apply 2026",
+    "Syngenta Foundation consultant agriculture innovation terms of reference 2026",
+    "CIMMYT consultant maize wheat agriculture Latin America 2026",
+    # ── Portales agregadores ──────────────────────────────────────────────
+    "reliefweb consultancy agriculture food Latin America closing date 2026",
+    "devex consultancy agriculture food policy LAC deadline 2026",
+    "UNGM procurement notice agriculture food systems consultant Latin America 2026",
 ]
 
 
@@ -563,28 +600,49 @@ def scrape_tavily(api_key: str) -> list:
                 max_results=20,
                 search_depth="advanced",
                 include_domains=[
-                    # Organismos globales
+                    # ── Portales ONU — procurement y vacantes ────────────────
                     "procurement-notices.undp.org",
                     "jobs.undp.org",
-                    "reliefweb.int",
-                    "devex.com",
+                    "ungm.org",               # UN Global Marketplace (multi-agencia)
                     "jobs.fao.org",
                     "fao.org",
                     "ifad.org",
                     "wfp.org",
+                    "ilo.org",
+                    "jobs.ilo.org",
+                    "who.int",
+                    "wto.org",
+                    "oecd.org",
+                    # ── Agregadores de desarrollo ────────────────────────────
+                    "reliefweb.int",
+                    "devex.com",
+                    # ── Bancos de desarrollo ─────────────────────────────────
                     "worldbank.org",
                     "iadb.org",
-                    "fontagro.org",
-                    "cgiar.org",
-                    "ifpri.org",
-                    "bioversityinternational.org",
-                    "cimmyt.org",
+                    "idbinvest.org",
                     "caf.com",
                     "bcie.org",
+                    "ebrd.com",
+                    "eib.org",
+                    # ── Organismos regionales ALC ────────────────────────────
                     "cepal.org",
                     "eclac.org",
                     "iica.int",
-                    # Cooperación bilateral
+                    "fontagro.org",
+                    "sica.int",               # Sistema Integración Centroamericana
+                    "caricom.org",
+                    # ── CGIAR e investigación agropecuaria ───────────────────
+                    "cgiar.org",
+                    "ifpri.org",
+                    "bioversityinternational.org",
+                    "alliancebioversityciat.org",
+                    "cimmyt.org",
+                    "ilri.org",
+                    "catie.ac.cr",            # CATIE — agropecuario tropical
+                    # ── Centros de desarrollo rural ALC ─────────────────────
+                    "rimisp.org",             # Centro Latinoamericano Desarrollo Rural
+                    "procasur.org",           # Formación y capacidades rurales ALC
+                    # ── Cooperación bilateral ────────────────────────────────
                     "giz.de",
                     "aecid.es",
                     "afd.fr",
@@ -592,16 +650,12 @@ def scrape_tavily(api_key: str) -> list:
                     "usaid.gov",
                     "grants.gov",
                     "foreignassistance.gov",
-                    # Sedes europeas — OI con HQ en Europa
-                    "ted.europa.eu",
+                    "snv.org",                # SNV desarrollo rural
+                    "helvetas.org",           # Cooperación suiza
+                    # ── Europa ───────────────────────────────────────────────
+                    "ted.europa.eu",          # Tenders electrónicos UE
                     "ec.europa.eu",
-                    "ilo.org",
-                    "who.int",
-                    "wto.org",
-                    "oecd.org",
-                    "ebrd.com",
-                    "eib.org",
-                    # Fondaciones privadas y filantrópicas
+                    # ── Fondaciones privadas y filantrópicas ─────────────────
                     "gafspfund.org",
                     "gatesfoundation.org",
                     "rockefellerfoundation.org",
@@ -610,21 +664,17 @@ def scrape_tavily(api_key: str) -> list:
                     "foundationfar.org",
                     "thehowardgbuffettfoundation.org",
                     "mcknight.org",
-                    # Sostenibilidad, medioambiente y cadenas de valor
+                    # ── Sostenibilidad, medioambiente y cadenas de valor ─────
                     "alinvest-verde.eu",
-                    "sustainable-supplychains.org",
                     "nature.org",
                     "worldwildlife.org",
                     "rainforest-alliance.org",
                     "solidaridadlatam.org",
                     "tropicalforestalliance.org",
                     "croplifela.org",
-                    # Investigación agropecuaria
-                    "alliancebioversityciat.org",
-                    "ilri.org",
+                    # ── Investigación adicional ──────────────────────────────
                     "syngentagroup.com",
                     "idrc-crdi.ca",
-                    "aic.ca",
                 ],
             )
 
@@ -723,6 +773,23 @@ def _org_from_url(url: str) -> str:
         "syngentagroup.com":               "Syngenta Foundation",
         "idrc-crdi.ca":                    "IDRC",
         "aic.ca":                          "AIC / Agri-Food Innovation Council",
+        "cimmyt.org":                      "CIMMYT / CGIAR",
+        "catie.ac.cr":                     "CATIE",
+        # Centros de desarrollo rural ALC
+        "rimisp.org":                      "RIMISP",
+        "procasur.org":                    "PROCASUR",
+        # ONU — marketplace y otros portales
+        "ungm.org":                        "UNGM / ONU",
+        "jobs.ilo.org":                    "OIT / ILO",
+        # Organismos regionales ALC
+        "sica.int":                        "SICA",
+        "caricom.org":                     "CARICOM",
+        # Cooperación bilateral adicional
+        "snv.org":                         "SNV",
+        "helvetas.org":                    "Helvetas",
+        "aecid.es":                        "AECID",
+        # Otros bancos
+        "idbinvest.org":                   "IDB Invest / BID Invest",
     }
     for domain, name in mapping.items():
         if domain in url:
@@ -1125,6 +1192,203 @@ def _dig_json(obj, results: list, seen: set, depth: int = 0) -> None:
             _dig_json(item, results, seen, depth + 1)
 
 
+def scrape_ungm(session: requests.Session) -> list:
+    """
+    UNGM — UN Global Marketplace (ungm.org).
+    Portal unificado de compras del sistema ONU: UNDP, FAO, IFAD, PMA, OIT,
+    OMS y más publican aquí sus contratos antes que en sus portales propios.
+    Scrapeamos la lista pública de licitaciones abiertas con filtros de texto.
+    """
+    log("UNGM — UN Global Marketplace...", "→ ")
+    results = []
+
+    # Endpoint público de búsqueda de avisos de procurement
+    urls = [
+        "https://www.ungm.org/Public/Notice?NoticeType=0&UNSPSCs=&deadline=&title=agriculture",
+        "https://www.ungm.org/Public/Notice?NoticeType=0&UNSPSCs=&deadline=&title=food+security",
+        "https://www.ungm.org/Public/Notice?NoticeType=0&UNSPSCs=&deadline=&title=rural+development",
+        "https://www.ungm.org/Public/Notice?NoticeType=0&UNSPSCs=&deadline=&title=consultant",
+        "https://www.ungm.org/Public/Notice?NoticeType=0&UNSPSCs=&deadline=&title=agricultura",
+    ]
+
+    seen_links: set = set()
+    for url in urls:
+        try:
+            r = session.get(url, timeout=25)
+            r.raise_for_status()
+            soup = BeautifulSoup(r.text, "lxml")
+
+            # Filas de la tabla de avisos
+            for row in soup.select("table tbody tr, tr.notice-row, .notice-item"):
+                # Título y enlace
+                a = row.find("a", href=True)
+                if not a:
+                    continue
+                title = a.get_text(strip=True)
+                href  = a.get("href", "").strip()
+                if not title or len(title) < 10:
+                    continue
+                link = href if href.startswith("http") else f"https://www.ungm.org{href}"
+                if link in seen_links:
+                    continue
+
+                # Organización (segunda columna típicamente)
+                cells = row.find_all(["td", "span", "div"])
+                org   = "UNGM / ONU"
+                for cell in cells:
+                    txt = cell.get_text(strip=True)
+                    if any(x in txt for x in ["UNDP", "FAO", "WFP", "IFAD", "ILO", "WHO", "UNOPS"]):
+                        org = txt[:80]
+                        break
+
+                # Fecha límite
+                deadline = "A verificar"
+                for cell in cells:
+                    txt = cell.get_text(strip=True)
+                    m = re.search(r"(\d{4}-\d{2}-\d{2}|\d{1,2}\s+\w+\s+20\d{2})", txt)
+                    if m:
+                        deadline = m.group(1)
+                        break
+
+                if not is_relevant(title + " " + org, link, org):
+                    continue
+
+                seen_links.add(link)
+                tipo, afinidad, prioridad = classify(title, org)
+                results.append({
+                    "Título":       title,
+                    "Organización": org,
+                    "Tipo":         tipo,
+                    "Región":       infer_region(title + " " + org),
+                    "Fecha límite": deadline,
+                    "Enlace":       link,
+                    "Afinidad":     afinidad,
+                    "Prioridad":    prioridad,
+                })
+
+            time.sleep(1)
+
+        except Exception as e:
+            log(f"Error UNGM ({url}): {e}", "  ✗ ")
+
+    log(f"{len(results)} oportunidades relevantes encontradas.", "  ✓ ")
+    return results
+
+
+def scrape_cepal(session: requests.Session) -> list:
+    """
+    CEPAL/ECLAC — scraping de sección de vacantes y convocatorias.
+    CEPAL publica consultorías vinculadas a política económica, comercio y
+    desarrollo productivo en ALC, muy alineadas con el perfil CEO.
+    """
+    log("CEPAL / ECLAC...", "→ ")
+    results = []
+
+    urls = [
+        "https://www.cepal.org/es/careers",
+        "https://www.cepal.org/es/convocatorias",
+        "https://www.eclac.org/en/careers",
+    ]
+
+    seen_links: set = set()
+    for url in urls:
+        try:
+            r = session.get(url, timeout=20)
+            r.raise_for_status()
+            soup = BeautifulSoup(r.text, "lxml")
+
+            for a in soup.select(
+                "h2 a, h3 a, h4 a, "
+                ".views-field-title a, .field-content a, "
+                ".vacancy a, .consultancy a, article a"
+            ):
+                title = a.get_text(strip=True)
+                href  = a.get("href", "").strip()
+                if not title or len(title) < 10:
+                    continue
+                link = href if href.startswith("http") else f"https://www.cepal.org{href}"
+                if link in seen_links:
+                    continue
+                if not is_relevant(title, link, "CEPAL"):
+                    continue
+
+                seen_links.add(link)
+                tipo, afinidad, _ = classify(title, "CEPAL")
+                results.append({
+                    "Título":       title,
+                    "Organización": "CEPAL",
+                    "Tipo":         tipo,
+                    "Región":       infer_region(title),
+                    "Fecha límite": "A verificar en CEPAL",
+                    "Enlace":       link,
+                    "Afinidad":     afinidad,
+                    "Prioridad":    "Alta",
+                })
+
+            time.sleep(1)
+
+        except Exception as e:
+            log(f"Error CEPAL ({url}): {e}", "  ✗ ")
+
+    log(f"{len(results)} oportunidades relevantes encontradas.", "  ✓ ")
+    return results
+
+
+def scrape_rimisp_procasur(session: requests.Session) -> list:
+    """
+    RIMISP y PROCASUR — centros especializados en desarrollo rural ALC.
+    Muy alineados con el foco temático de Grupo CEO.
+    """
+    log("RIMISP / PROCASUR...", "→ ")
+    results = []
+
+    sources = [
+        ("https://www.rimisp.org/convocatorias/", "RIMISP"),
+        ("https://www.rimisp.org/jobs/", "RIMISP"),
+        ("https://www.procasur.org/convocatorias", "PROCASUR"),
+        ("https://www.procasur.org/oportunidades", "PROCASUR"),
+    ]
+
+    seen_links: set = set()
+    for url, org_name in sources:
+        try:
+            r = session.get(url, timeout=20)
+            r.raise_for_status()
+            soup = BeautifulSoup(r.text, "lxml")
+
+            for a in soup.select("h2 a, h3 a, h4 a, article a, .entry-title a, .post-title a"):
+                title = a.get_text(strip=True)
+                href  = a.get("href", "").strip()
+                if not title or len(title) < 8:
+                    continue
+                link = href if href.startswith("http") else f"https://www.{org_name.lower()}.org{href}"
+                if link in seen_links:
+                    continue
+                if not is_relevant(title, link, org_name):
+                    continue
+
+                seen_links.add(link)
+                tipo, afinidad, _ = classify(title, org_name)
+                results.append({
+                    "Título":       title,
+                    "Organización": org_name,
+                    "Tipo":         tipo,
+                    "Región":       infer_region(title),
+                    "Fecha límite": "A verificar en portal",
+                    "Enlace":       link,
+                    "Afinidad":     afinidad,
+                    "Prioridad":    "Alta",
+                })
+
+            time.sleep(1)
+
+        except Exception as e:
+            log(f"Error {org_name} ({url}): {e}", "  ✗ ")
+
+    log(f"{len(results)} oportunidades relevantes encontradas.", "  ✓ ")
+    return results
+
+
 # ── Motor principal ──────────────────────────────────────────────────────────
 
 def run_all_scrapers() -> list:
@@ -1146,11 +1410,14 @@ def run_all_scrapers() -> list:
 
     # ── Scrapers HTML clásicos ───────────────────────────────────────────────
     scrapers = [
-        ("ReliefWeb",    scrape_reliefweb),
-        ("UNDP",         scrape_undp),
-        ("FAO",          scrape_fao),
-        ("IDB",          scrape_iadb),
-        ("Devex",        scrape_devex),
+        ("ReliefWeb",       scrape_reliefweb),
+        ("UNDP",            scrape_undp),
+        ("UNGM",            scrape_ungm),
+        ("FAO",             scrape_fao),
+        ("CEPAL",           scrape_cepal),
+        ("IDB",             scrape_iadb),
+        ("RIMISP/PROCASUR", scrape_rimisp_procasur),
+        ("Devex",           scrape_devex),
     ]
     for name, fn in scrapers:
         try:
@@ -1290,7 +1557,7 @@ def main() -> None:
     print()
 
     tavily_active = bool(os.environ.get("TAVILY_API_KEY", "").strip())
-    n_sources = 6 if tavily_active else 5
+    n_sources = 9 if tavily_active else 8  # 8 scrapers HTML + Tavily opcional
     log(f"Iniciando búsqueda en {n_sources} fuentes{' (Tavily activo)' if tavily_active else ''}...")
     print()
     all_found = run_all_scrapers()

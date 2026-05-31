@@ -32,9 +32,10 @@ from bs4 import BeautifulSoup
 
 # ── Configuración ────────────────────────────────────────────────────────────
 
-BASE_DIR    = Path(__file__).parent
-CSV_PATH    = BASE_DIR / "oportunidades_consultoria.csv"
-REPORT_PATH = BASE_DIR / "nuevas_esta_semana.txt"
+BASE_DIR     = Path(__file__).parent
+CSV_PATH     = BASE_DIR / "oportunidades_consultoria.csv"
+REPORT_PATH  = BASE_DIR / "nuevas_esta_semana.txt"
+STATS_PATH   = BASE_DIR / "ultima_busqueda_stats.json"   # leído por la app
 
 # Palabras del sector — el texto debe contener al menos una
 KEYWORDS = [
@@ -1252,274 +1253,12 @@ def _dig_json(obj, results: list, seen: set, depth: int = 0) -> None:
             _dig_json(item, results, seen, depth + 1)
 
 
-def scrape_unjobs(session: requests.Session) -> list:
-    """
-    UN Jobs (unjobs.org) — agregador de posiciones del sistema ONU.
-    La sección /categories/consultancy lista exclusivamente consultorías.
-    Cubre UNDP, FAO, IFAD, PMA, OIT, OMS, UNOPS y más en un solo portal.
-    """
-    log("UN Jobs (unjobs.org)...", "→ ")
-    results = []
-
-    urls = [
-        "https://unjobs.org/categories/consultancy",
-        "https://unjobs.org/themes/agriculture",
-        "https://unjobs.org/themes/food-security",
-        "https://unjobs.org/themes/rural-development",
-        "https://unjobs.org/duty_stations/latin-america-and-caribbean",
-    ]
-
-    seen_links: set = set()
-    for url in urls:
-        try:
-            r = session.get(url, timeout=20)
-            r.raise_for_status()
-            soup = BeautifulSoup(r.text, "lxml")
-
-            # UN Jobs lista empleos en <div class="j"> o similar con <a>
-            for a in soup.select(
-                "div.j a, div.job a, h2 a, h3 a, "
-                ".job-title a, a[href*='/jobs/']"
-            ):
-                title = a.get_text(strip=True)
-                href  = a.get("href", "").strip()
-                if not title or len(title) < 10:
-                    continue
-                link = href if href.startswith("http") else f"https://unjobs.org{href}"
-                if link in seen_links:
-                    continue
-
-                # Extraer organización del contexto cercano
-                parent = a.find_parent(["div", "li", "tr"])
-                org = "ONU"
-                if parent:
-                    full_text = parent.get_text(" ", strip=True)
-                    for known in ["UNDP", "FAO", "WFP", "IFAD", "ILO", "WHO",
-                                  "UNOPS", "UNICEF", "UN Women", "UNFPA"]:
-                        if known in full_text:
-                            org = known
-                            break
-
-                if not is_relevant(title + " " + org, link, org):
-                    continue
-
-                seen_links.add(link)
-                tipo, afinidad, prioridad = classify(title, org)
-                results.append({
-                    "Título":       title,
-                    "Organización": org,
-                    "Tipo":         tipo,
-                    "Región":       infer_region(title),
-                    "Fecha límite": "A verificar en UN Jobs",
-                    "Enlace":       link,
-                    "Afinidad":     afinidad,
-                    "Prioridad":    prioridad,
-                })
-
-            time.sleep(1)
-
-        except Exception as e:
-            log(f"Error UN Jobs ({url}): {e}", "  ✗ ")
-
-    log(f"{len(results)} oportunidades relevantes encontradas.", "  ✓ ")
-    return results
-
-
-def scrape_ungm(session: requests.Session) -> list:
-    """
-    UNGM — UN Global Marketplace (ungm.org).
-    Portal unificado de compras del sistema ONU: UNDP, FAO, IFAD, PMA, OIT,
-    OMS y más publican aquí sus contratos antes que en sus portales propios.
-    Scrapeamos la lista pública de licitaciones abiertas con filtros de texto.
-    """
-    log("UNGM — UN Global Marketplace...", "→ ")
-    results = []
-
-    # Endpoint público de búsqueda de avisos de procurement
-    urls = [
-        "https://www.ungm.org/Public/Notice?NoticeType=0&UNSPSCs=&deadline=&title=agriculture",
-        "https://www.ungm.org/Public/Notice?NoticeType=0&UNSPSCs=&deadline=&title=food+security",
-        "https://www.ungm.org/Public/Notice?NoticeType=0&UNSPSCs=&deadline=&title=rural+development",
-        "https://www.ungm.org/Public/Notice?NoticeType=0&UNSPSCs=&deadline=&title=consultant",
-        "https://www.ungm.org/Public/Notice?NoticeType=0&UNSPSCs=&deadline=&title=agricultura",
-    ]
-
-    seen_links: set = set()
-    for url in urls:
-        try:
-            r = session.get(url, timeout=25)
-            r.raise_for_status()
-            soup = BeautifulSoup(r.text, "lxml")
-
-            # Filas de la tabla de avisos
-            for row in soup.select("table tbody tr, tr.notice-row, .notice-item"):
-                # Título y enlace
-                a = row.find("a", href=True)
-                if not a:
-                    continue
-                title = a.get_text(strip=True)
-                href  = a.get("href", "").strip()
-                if not title or len(title) < 10:
-                    continue
-                link = href if href.startswith("http") else f"https://www.ungm.org{href}"
-                if link in seen_links:
-                    continue
-
-                # Organización (segunda columna típicamente)
-                cells = row.find_all(["td", "span", "div"])
-                org   = "UNGM / ONU"
-                for cell in cells:
-                    txt = cell.get_text(strip=True)
-                    if any(x in txt for x in ["UNDP", "FAO", "WFP", "IFAD", "ILO", "WHO", "UNOPS"]):
-                        org = txt[:80]
-                        break
-
-                # Fecha límite
-                deadline = "A verificar"
-                for cell in cells:
-                    txt = cell.get_text(strip=True)
-                    m = re.search(r"(\d{4}-\d{2}-\d{2}|\d{1,2}\s+\w+\s+20\d{2})", txt)
-                    if m:
-                        deadline = m.group(1)
-                        break
-
-                if not is_relevant(title + " " + org, link, org):
-                    continue
-
-                seen_links.add(link)
-                tipo, afinidad, prioridad = classify(title, org)
-                results.append({
-                    "Título":       title,
-                    "Organización": org,
-                    "Tipo":         tipo,
-                    "Región":       infer_region(title + " " + org),
-                    "Fecha límite": deadline,
-                    "Enlace":       link,
-                    "Afinidad":     afinidad,
-                    "Prioridad":    prioridad,
-                })
-
-            time.sleep(1)
-
-        except Exception as e:
-            log(f"Error UNGM ({url}): {e}", "  ✗ ")
-
-    log(f"{len(results)} oportunidades relevantes encontradas.", "  ✓ ")
-    return results
-
-
-def scrape_cepal(session: requests.Session) -> list:
-    """
-    CEPAL/ECLAC — scraping de sección de vacantes y convocatorias.
-    CEPAL publica consultorías vinculadas a política económica, comercio y
-    desarrollo productivo en ALC, muy alineadas con el perfil CEO.
-    """
-    log("CEPAL / ECLAC...", "→ ")
-    results = []
-
-    urls = [
-        "https://www.cepal.org/es/careers",
-        "https://www.cepal.org/es/convocatorias",
-        "https://www.eclac.org/en/careers",
-    ]
-
-    seen_links: set = set()
-    for url in urls:
-        try:
-            r = session.get(url, timeout=20)
-            r.raise_for_status()
-            soup = BeautifulSoup(r.text, "lxml")
-
-            for a in soup.select(
-                "h2 a, h3 a, h4 a, "
-                ".views-field-title a, .field-content a, "
-                ".vacancy a, .consultancy a, article a"
-            ):
-                title = a.get_text(strip=True)
-                href  = a.get("href", "").strip()
-                if not title or len(title) < 10:
-                    continue
-                link = href if href.startswith("http") else f"https://www.cepal.org{href}"
-                if link in seen_links:
-                    continue
-                if not is_relevant(title, link, "CEPAL"):
-                    continue
-
-                seen_links.add(link)
-                tipo, afinidad, _ = classify(title, "CEPAL")
-                results.append({
-                    "Título":       title,
-                    "Organización": "CEPAL",
-                    "Tipo":         tipo,
-                    "Región":       infer_region(title),
-                    "Fecha límite": "A verificar en CEPAL",
-                    "Enlace":       link,
-                    "Afinidad":     afinidad,
-                    "Prioridad":    "Alta",
-                })
-
-            time.sleep(1)
-
-        except Exception as e:
-            log(f"Error CEPAL ({url}): {e}", "  ✗ ")
-
-    log(f"{len(results)} oportunidades relevantes encontradas.", "  ✓ ")
-    return results
-
-
-def scrape_rimisp_procasur(session: requests.Session) -> list:
-    """
-    RIMISP y PROCASUR — centros especializados en desarrollo rural ALC.
-    Muy alineados con el foco temático de Grupo CEO.
-    """
-    log("RIMISP / PROCASUR...", "→ ")
-    results = []
-
-    sources = [
-        ("https://www.rimisp.org/convocatorias/", "RIMISP"),
-        ("https://www.rimisp.org/jobs/", "RIMISP"),
-        ("https://www.procasur.org/convocatorias", "PROCASUR"),
-        ("https://www.procasur.org/oportunidades", "PROCASUR"),
-    ]
-
-    seen_links: set = set()
-    for url, org_name in sources:
-        try:
-            r = session.get(url, timeout=20)
-            r.raise_for_status()
-            soup = BeautifulSoup(r.text, "lxml")
-
-            for a in soup.select("h2 a, h3 a, h4 a, article a, .entry-title a, .post-title a"):
-                title = a.get_text(strip=True)
-                href  = a.get("href", "").strip()
-                if not title or len(title) < 8:
-                    continue
-                link = href if href.startswith("http") else f"https://www.{org_name.lower()}.org{href}"
-                if link in seen_links:
-                    continue
-                if not is_relevant(title, link, org_name):
-                    continue
-
-                seen_links.add(link)
-                tipo, afinidad, _ = classify(title, org_name)
-                results.append({
-                    "Título":       title,
-                    "Organización": org_name,
-                    "Tipo":         tipo,
-                    "Región":       infer_region(title),
-                    "Fecha límite": "A verificar en portal",
-                    "Enlace":       link,
-                    "Afinidad":     afinidad,
-                    "Prioridad":    "Alta",
-                })
-
-            time.sleep(1)
-
-        except Exception as e:
-            log(f"Error {org_name} ({url}): {e}", "  ✗ ")
-
-    log(f"{len(results)} oportunidades relevantes encontradas.", "  ✓ ")
-    return results
+# Nota: scrapers de UNGM, CEPAL, RIMISP/PROCASUR y UN Jobs fueron probados
+# en producción (2026-05-30) y confirmados como no funcionales:
+# - UNGM: requiere JavaScript/autenticación
+# - CEPAL, RIMISP, PROCASUR: 403/404 o sin contenido parseable
+# - UN Jobs: 404 en sección consultancy
+# Se mantienen comentados. La fuente principal es Tavily + UNDP + ReliefWeb.
 
 
 # ── Motor principal ──────────────────────────────────────────────────────────
@@ -1541,17 +1280,15 @@ def run_all_scrapers() -> list:
         log("TAVILY_API_KEY no configurada — omitiendo Tavily.", "  ⚠ ")
         log("Para activarlo: export TAVILY_API_KEY='tvly-xxxx'  (app.tavily.com)", "    ")
 
-    # ── Scrapers HTML clásicos ───────────────────────────────────────────────
+    # ── Scrapers HTML (fuentes confirmadas funcionales) ──────────────────────
+    # Fuentes descartadas por no funcionar (JS, 403, 404):
+    #   UNGM, CEPAL, RIMISP/PROCASUR, UN Jobs, GIZ, AECID, IFAD, CGIAR
     scrapers = [
-        ("ReliefWeb",       scrape_reliefweb),
-        ("UNDP",            scrape_undp),
-        ("UN Jobs",         scrape_unjobs),
-        ("UNGM",            scrape_ungm),
-        ("FAO",             scrape_fao),
-        ("CEPAL",           scrape_cepal),
-        ("IDB",             scrape_iadb),
-        ("RIMISP/PROCASUR", scrape_rimisp_procasur),
-        ("Devex",           scrape_devex),
+        ("ReliefWeb", scrape_reliefweb),
+        ("UNDP",      scrape_undp),
+        ("FAO",       scrape_fao),
+        ("IDB",       scrape_iadb),
+        ("Devex",     scrape_devex),
     ]
     counts = {}
     for name, fn in scrapers:
@@ -1565,11 +1302,15 @@ def run_all_scrapers() -> list:
         time.sleep(1)
 
     print()
-    log("── Resultados por fuente ──────────────────────────────", "")
+    log("── Resultados por fuente (relevantes antes de dedup) ──", "")
+    total_raw = 0
     for name, n in counts.items():
-        log(f"  {name:<20} {n} oportunidades relevantes", "")
+        log(f"  {name:<12} {n:>3} oportunidades", "")
+        total_raw += n
     if tavily_active:
-        log(f"  {'Tavily':<20} incluido arriba", "")
+        tavily_n = len(all_results) - total_raw
+        log(f"  {'Tavily':<12} {tavily_n:>3} oportunidades (60 queries)", "")
+    log(f"  {'TOTAL':<12} {len(all_results):>3} antes de filtro duplicados", "")
 
     return all_results
 
@@ -1701,8 +1442,8 @@ def main() -> None:
     print()
 
     tavily_active = bool(os.environ.get("TAVILY_API_KEY", "").strip())
-    n_sources = 10 if tavily_active else 9  # 9 scrapers HTML + Tavily opcional
-    log(f"Iniciando búsqueda en {n_sources} fuentes{' (Tavily activo — 60 queries)' if tavily_active else ' (sin Tavily — solo scrapers HTML)'}...")
+    n_sources = 6 if tavily_active else 5  # 5 scrapers HTML confirmados + Tavily
+    log(f"Iniciando búsqueda en {n_sources} fuentes{' (Tavily activo — 60 queries)' if tavily_active else ' (sin Tavily — solo scrapers HTML; configurá TAVILY_API_KEY para mejores resultados)'}...")
     print()
     all_found = run_all_scrapers()
     print()
@@ -1718,6 +1459,20 @@ def main() -> None:
 
     log("Generando nuevas_esta_semana.txt...")
     write_report(new_opps)
+
+    # Guardar stats para que la app las muestre
+    stats = {
+        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "tavily_activo": tavily_active,
+        "total_bruto": len(all_found),
+        "nuevas": len(new_opps),
+        "total_csv": len(existing_ids),
+        "descartadas_bloqueadas": len(discarded_ids),
+    }
+    try:
+        STATS_PATH.write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
 
     print_summary(new_opps)
 

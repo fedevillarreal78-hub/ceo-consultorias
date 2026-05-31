@@ -410,6 +410,7 @@ def save_socios(df: pd.DataFrame) -> None:
 
 # ── Criterios aprendidos de descarte ─────────────────────────────────────────
 
+import json
 import json as _json
 
 def load_criterios() -> dict:
@@ -1435,10 +1436,43 @@ with st.sidebar:
     except Exception:
         _default_key = os.environ.get("TAVILY_API_KEY", "")
 
-    tavily_key = st.text_input("Tavily API Key", type="password", value=_default_key)
+    tavily_key = st.text_input("Tavily API Key", type="password", value=_default_key,
+                                label_visibility="collapsed",
+                                placeholder="tvly-xxxx (opcional pero muy recomendado)")
 
-    # El botón siempre está disponible — tanto local como en Streamlit Cloud
-    st.caption("🤖 Actualización automática: lunes y jueves 8 AM (GitHub Actions)")
+    # ── Indicador de estado Tavily ────────────────────────────────────────
+    _tavily_ok = bool(tavily_key.strip())
+    if _tavily_ok:
+        st.markdown(
+            "<div style='font-size:0.75rem;padding:0.3rem 0.5rem;border-radius:6px;"
+            "background:rgba(76,175,80,0.18);color:#81C784;margin-bottom:0.4rem;'>"
+            "✅ <b>Tavily activo</b> — búsqueda amplia (60 queries)</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            "<div style='font-size:0.75rem;padding:0.3rem 0.5rem;border-radius:6px;"
+            "background:rgba(255,152,0,0.18);color:#FFB74D;margin-bottom:0.4rem;'>"
+            "⚠️ <b>Sin Tavily</b> — solo 5 scrapers HTML (resultados limitados)</div>",
+            unsafe_allow_html=True,
+        )
+
+    # ── Stats de última búsqueda ──────────────────────────────────────────
+    _stats_path = Path(__file__).parent / "ultima_busqueda_stats.json"
+    if _stats_path.exists():
+        try:
+            _st = json.load(open(_stats_path))
+            st.markdown(
+                f"<div style='font-size:0.7rem;color:rgba(255,255,255,0.4);margin-bottom:0.3rem;'>"
+                f"Última búsqueda: {_st.get('fecha','?')} · "
+                f"{_st.get('nuevas',0)} nuevas de {_st.get('total_bruto',0)} encontradas</div>",
+                unsafe_allow_html=True,
+            )
+        except Exception:
+            pass
+
+    # ── Botón de búsqueda ─────────────────────────────────────────────────
+    st.caption("🤖 Auto: lunes y jueves 8 AM (GitHub Actions)")
     if st.button("▶ Buscar nuevas oportunidades", use_container_width=True):
         if not SCRIPT_PATH.exists():
             st.error("No se encontró buscar_consultorias.py en el servidor.")
@@ -1447,11 +1481,11 @@ with st.sidebar:
             env = os.environ.copy()
             if tavily_key.strip():
                 env["TAVILY_API_KEY"] = tavily_key.strip()
-            prog.progress(10, text="Ejecutando scraper (puede tardar 2-3 min)…")
+            prog.progress(10, text="Ejecutando scraper (2-4 min con Tavily, ~30s sin él)…")
             result = subprocess.run(
                 [sys.executable, str(SCRIPT_PATH)],
                 capture_output=True, text=True, env=env,
-                timeout=300,
+                timeout=360,
             )
             if result.returncode == 0:
                 prog.progress(80, text="Guardando en GitHub…")
@@ -1461,18 +1495,84 @@ with st.sidebar:
                     "oportunidades_consultoria.csv",
                     f"Auto-update CSV [{ts} UTC] — búsqueda manual",
                 )
+                # También pushear stats JSON si existe
+                if _stats_path.exists():
+                    _push_file_to_github(_stats_path, "ultima_busqueda_stats.json",
+                                         f"Stats búsqueda [{ts}]")
                 prog.progress(100, text="¡Listo!")
-                if pushed:
-                    st.success("✅ Búsqueda completada y CSV guardado en GitHub.")
-                else:
+                # Mostrar resumen
+                try:
+                    _st = json.load(open(_stats_path))
+                    _n  = _st.get("nuevas", 0)
+                    _br = _st.get("total_bruto", 0)
+                    if _n > 0:
+                        st.success(f"✅ {_n} oportunidades nuevas agregadas (de {_br} encontradas).")
+                    else:
+                        st.info(f"ℹ️ Búsqueda completa. {_br} resultados encontrados, todos ya estaban en el pipeline.")
+                except Exception:
                     st.success("✅ Búsqueda completada.")
-                    st.warning("⚠️ No se pudo hacer push a GitHub (verificá GITHUB_TOKEN en Secrets).", icon="⚠️")
+                if not pushed:
+                    st.warning("⚠️ No se pudo hacer push a GitHub (verificá GITHUB_TOKEN en Secrets).")
+                with st.expander("Ver log de búsqueda"):
+                    st.code((result.stdout or "")[-3000:])
                 st.cache_data.clear()
                 st.rerun()
             else:
                 prog.empty()
                 st.error("Error en el scraper:")
                 st.code((result.stderr or result.stdout)[-2000:])
+
+    # ── Agregar oportunidad manualmente ───────────────────────────────────
+    st.markdown("---")
+    st.markdown(
+        "<div style='font-size:0.68rem;font-weight:700;text-transform:uppercase;"
+        "letter-spacing:0.1em;color:rgba(255,255,255,0.45);padding-bottom:0.3rem;'>"
+        "Agregar manualmente</div>",
+        unsafe_allow_html=True,
+    )
+    with st.expander("➕ Nueva oportunidad"):
+        with st.form("form_manual_opp", clear_on_submit=True):
+            m_titulo = st.text_input("Título *")
+            m_org    = st.text_input("Organización *")
+            m_enlace = st.text_input("Enlace (URL)")
+            c1, c2   = st.columns(2)
+            with c1:
+                m_fecha  = st.text_input("Fecha límite")
+                m_tipo   = st.selectbox("Tipo", ["Ambos", "Firma", "Individual"])
+            with c2:
+                m_region = st.text_input("Región", value="A verificar")
+                m_afin   = st.selectbox("Afinidad", ["Ambos", "ICyT, Productividad y Desarrollo",
+                                                       "Comercio y Geopolítica", "Empresarial"])
+            m_monto  = st.text_input("Monto estimado (USD)", value="")
+            submitted = st.form_submit_button("Agregar al pipeline", use_container_width=True)
+            if submitted:
+                if not m_titulo.strip() or not m_org.strip():
+                    st.error("Título y Organización son obligatorios.")
+                else:
+                    _df_cur = load_data()
+                    nueva = {
+                        "Título": m_titulo.strip(),
+                        "Organización": m_org.strip(),
+                        "Tipo": m_tipo,
+                        "Región": m_region.strip() or "A verificar",
+                        "País": "—",
+                        "Fecha límite": m_fecha.strip() or "A verificar",
+                        "Enlace": m_enlace.strip(),
+                        "Afinidad": m_afin,
+                        "Prioridad": "Alta",
+                        "Estado": "Identificada",
+                        "Monto estimado (USD)": m_monto.strip(),
+                        "Consultor": "—",
+                        "Observaciones": f"Agregada manualmente por {usuario_activo}",
+                        "Socio vinculado": "",
+                        "Votos descarte": "",
+                    }
+                    import pandas as _pd2
+                    _df_cur = _pd2.concat([_df_cur, _pd2.DataFrame([nueva])],
+                                          ignore_index=True)
+                    save_df(_df_cur)
+                    st.success(f"✅ '{m_titulo[:40]}' agregada al pipeline.")
+                    st.rerun()
 
     st.markdown(
         f"<div style='font-size:0.7rem;color:rgba(255,255,255,0.25);text-align:center;"

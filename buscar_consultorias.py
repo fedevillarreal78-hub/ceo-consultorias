@@ -1022,14 +1022,11 @@ def scrape_fao(session: requests.Session) -> list:
     results = []
 
     fao_urls = [
-        # ── Consultorías FAO — páginas específicas ────────────────────────
-        "https://www.fao.org/employment/vacancies/consultancies/en/",
-        "https://www.fao.org/evaluation/about-us/vacancies/en",
-        # ── Oficina Regional ALC ──────────────────────────────────────────
+        # ── Oficina Regional ALC — confirmado funcional ───────────────────
         "https://www.fao.org/americas/jobs/en",
         "https://www.fao.org/americas/jobs/es",
-        # ── Portal global jobs.fao.org — SSL antiguo, verify=False ───────
-        "https://jobs.fao.org/careersection/fao_external/jobsearch.ftl?lang=en",
+        # ── Portal evaluaciones FAO ───────────────────────────────────────
+        "https://www.fao.org/evaluation/about-us/vacancies/en",
     ]
 
     for url in fao_urls:
@@ -1282,12 +1279,12 @@ def run_all_scrapers() -> list:
 
     # ── Scrapers HTML (fuentes confirmadas funcionales) ──────────────────────
     # Fuentes descartadas por no funcionar (JS, 403, 404):
-    #   UNGM, CEPAL, RIMISP/PROCASUR, UN Jobs, GIZ, AECID, IFAD, CGIAR
+    #   UNGM, CEPAL, RIMISP/PROCASUR, UN Jobs, GIZ, AECID, IFAD, CGIAR, IDB
+    _tavily_active = bool(os.environ.get("TAVILY_API_KEY", "").strip())
     scrapers = [
         ("ReliefWeb", scrape_reliefweb),
         ("UNDP",      scrape_undp),
         ("FAO",       scrape_fao),
-        ("IDB",       scrape_iadb),
         ("Devex",     scrape_devex),
     ]
     counts = {}
@@ -1303,19 +1300,18 @@ def run_all_scrapers() -> list:
 
     print()
     log("── Resultados por fuente (relevantes antes de dedup) ──", "")
-    total_raw = 0
+    total_html = sum(counts.values())
     for name, n in counts.items():
         log(f"  {name:<12} {n:>3} oportunidades", "")
-        total_raw += n
-    if tavily_active:
-        tavily_n = len(all_results) - total_raw
+    if _tavily_active:
+        tavily_n = len(all_results) - total_html
         log(f"  {'Tavily':<12} {tavily_n:>3} oportunidades (60 queries)", "")
     log(f"  {'TOTAL':<12} {len(all_results):>3} antes de filtro duplicados", "")
 
     return all_results
 
 
-def filter_new(candidates: list, existing_ids: set, discarded_ids: set | None = None) -> list:
+def filter_new(candidates: list, existing_ids: set, discarded_ids=None) -> list:
     """Filtra candidatos para quedarse solo con los realmente nuevos.
 
     - existing_ids: todos los IDs ya en el CSV (evita duplicados).

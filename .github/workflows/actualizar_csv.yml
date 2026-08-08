@@ -2,42 +2,71 @@ name: Actualizar oportunidades de consultoría
 
 on:
   schedule:
-    - cron: '0 14 * * 1'   # Lunes    14:00 UTC = 8:00 AM UTC-6
-    - cron: '0 14 * * 4'   # Jueves   14:00 UTC = 8:00 AM UTC-6
-  workflow_dispatch:         # Permite ejecución manual desde GitHub
+    - cron: '0 14 * * 1'   # Lunes 8:00 AM Guatemala
+    - cron: '0 14 * * 4'   # Jueves 8:00 AM Guatemala
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: oportunidades-consultoria
+  cancel-in-progress: false
+
 jobs:
   actualizar:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - name: Clonar repositorio
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Configurar Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: pip
 
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
-      - name: Ejecutar scraper
+      - name: Ejecutar pruebas
+        run: python -m unittest discover -s tests -v
+
+      - name: Buscar oportunidades
         env:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          UNGM_ACCESS_TOKEN: ${{ secrets.UNGM_ACCESS_TOKEN }}
+          SEARCH_LOOKBACK_DAYS: '21'
         run: python buscar_consultorias.py
 
-      - name: Commit y push si hubo cambios
+      - name: Auditar base histórica sin eliminar datos
+        run: python sanear_base.py
+
+      - name: Commit y push con reintentos
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add oportunidades_consultoria.csv
-          if git diff --cached --exit-code; then
-            echo "Sin cambios en el CSV — no se genera commit."
-          else
-            git commit -m "Auto-update CSV [$(date -u '+%Y-%m-%d %H:%M UTC')]"
-            git push
+          git add oportunidades_consultoria.csv candidatos_revision.csv \
+                  ultima_busqueda_stats.json nuevas_esta_semana.txt \
+                  auditoria_oportunidades.csv auditoria_oportunidades_stats.json
+          if git diff --cached --quiet; then
+            echo "Sin cambios para publicar."
+            exit 0
           fi
+          git commit -m "Auto-update oportunidades [$(date -u '+%Y-%m-%d %H:%M UTC')]"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Intento ${attempt} fallido; reintentando..."
+            git rebase --abort || true
+            sleep $((attempt * 5))
+          done
+          echo "No fue posible publicar los cambios tras tres intentos."
+          exit 1

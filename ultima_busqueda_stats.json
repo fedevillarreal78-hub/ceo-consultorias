@@ -1,8 +1,8 @@
 {
-  "fecha": "2026-05-31 03:31",
-  "tavily_activo": true,
-  "total_bruto": 211,
-  "nuevas": 85,
-  "total_csv": 182,
+  "fecha": "2026-08-08 17:54",
+  "tavily_activo": false,
+  "total_bruto": 38,
+  "nuevas": 8,
+  "total_csv": 1275,
   "descartadas_bloqueadas": 144
 }

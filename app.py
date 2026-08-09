@@ -20,6 +20,11 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+from ceo_theme import apply_ceo_theme
+apply_ceo_theme()
+# Se reinicia en cada ejecución; la opción seleccionada en la barra lateral la activa.
+st.session_state["_render_revision_candidatos"] = False
+
 CSV_PATH      = Path(__file__).parent / "oportunidades_consultoria.csv"
 SOCIOS_CSV    = Path(__file__).parent / "socios_estrategicos.csv"
 SCRIPT_PATH   = Path(__file__).parent / "buscar_consultorias.py"
@@ -2343,6 +2348,6 @@ elif nav_page == "🤝  Socios":
             st.rerun()
 
 # --- Render central: revisión de candidatos ---
-if st.session_state.pop("_render_revision_candidatos", False):
+if st.session_state.get("_render_revision_candidatos", False):
     from revision_candidatos import render_revision_candidatos
     render_revision_candidatos()

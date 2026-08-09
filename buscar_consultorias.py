@@ -29,6 +29,7 @@ from opportunity_engine import (
     MAIN_COLUMNS, STAGING_COLUMNS, Opportunity, append_unique, assess,
     load_csv_rows, likely_duplicate, to_main_row, to_staging_row, write_csv_rows,
 )
+from ceo_profile import CEO_TAVILY_SEARCH_GROUPS
 
 BASE_DIR = Path(__file__).parent
 MAIN_PATH = BASE_DIR / "oportunidades_consultoria.csv"
@@ -88,6 +89,10 @@ TAVILY_SEARCH_GROUPS = [
         ],
     },
 ]
+
+
+# Perfil institucional vigente de Grupo CEO.
+TAVILY_SEARCH_GROUPS = CEO_TAVILY_SEARCH_GROUPS
 
 
 def log(message: str, marker: str = "•") -> None:

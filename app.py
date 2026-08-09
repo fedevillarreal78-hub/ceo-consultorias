@@ -1344,8 +1344,7 @@ with st.sidebar:
         key="nav_page",
     )
     if _radio_val == '🔎 REVISIÓN DE CANDIDATOS':
-        from revision_candidatos import render_revision_candidatos
-        render_revision_candidatos()
+        st.session_state["_render_revision_candidatos"] = True
     nav_page = _radio_val
 
     st.divider()
@@ -2342,3 +2341,8 @@ elif nav_page == "🤝  Socios":
             save_socios(df_socios_upd)
             st.success(f"✅ **{ns_nombre.strip()}** agregado como {ns_cat}.")
             st.rerun()
+
+# --- Render central: revisión de candidatos ---
+if st.session_state.pop("_render_revision_candidatos", False):
+    from revision_candidatos import render_revision_candidatos
+    render_revision_candidatos()

@@ -1344,8 +1344,8 @@ with st.sidebar:
         key="nav_page",
     )
     if _radio_val == '🔎 REVISIÓN DE CANDIDATOS':
-        st.switch_page('pages/6_Revision_de_candidatos.py')
-
+        from revision_candidatos import render_revision_candidatos
+        render_revision_candidatos()
     nav_page = _radio_val
 
     st.divider()

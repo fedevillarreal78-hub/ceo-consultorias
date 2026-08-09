@@ -95,6 +95,10 @@ def main_row(row, note):
 
 
 require_password()
+with st.sidebar:
+    if st.button("← Volver al panel principal", use_container_width=True):
+        st.switch_page("app.py")
+
 st.title("Revisión de candidatos")
 st.caption("Resultados exploratorios o con información incompleta. Nada de esta bandeja ingresa al pipeline sin aprobación humana.")
 

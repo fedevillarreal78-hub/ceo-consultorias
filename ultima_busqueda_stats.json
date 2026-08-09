@@ -1,5 +1,5 @@
 {
-  "fecha": "2026-08-09 01:30",
+  "fecha": "2026-08-09 01:45",
   "version_motor": "2.0",
   "tavily_activo": false,
   "ungm_token_configurado": false,
@@ -14,19 +14,19 @@
   "por_fuente": {
     "UNDP": {
       "brutas": 597,
-      "segundos": 3.77
+      "segundos": 3.75
     },
     "World Bank": {
       "brutas": 17,
-      "segundos": 7.47
+      "segundos": 7.16
     },
     "ReliefWeb": {
       "brutas": 0,
-      "segundos": 0.33
+      "segundos": 0.29
     },
     "FAO": {
       "brutas": 1,
-      "segundos": 0.23
+      "segundos": 0.2
     },
     "Tavily": {
       "brutas": 0,

@@ -17,6 +17,8 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+from ceo_profile import dominant_ceo_pillar, evaluate_ceo_fit
+
 MAIN_COLUMNS = [
     "Título", "Organización", "Tipo", "Región", "País", "Fecha límite",
     "Enlace", "Afinidad", "Prioridad", "Estado", "Monto estimado (USD)",
@@ -27,7 +29,8 @@ STAGING_COLUMNS = [
     "ID canónico", "Título", "Organización", "Tipo", "Región", "País",
     "Fecha límite", "Enlace", "Afinidad", "Prioridad", "Fuente",
     "Referencia", "Fecha publicación", "Resumen", "Puntaje", "Motivos",
-    "Estado revisión", "Detectada",
+    "Estado revisión", "Detectada", "Comentario revisión",
+    "Revisado por", "Fecha revisión",
 ]
 
 ALC_COUNTRIES = {
@@ -345,17 +348,8 @@ def classify_type(text: str) -> str:
 
 
 def classify_affinity(text: str, opportunity_type: str) -> str:
-    norm = normalize_text(text)
-    trade_terms = ["trade", "comercio", "market access", "negotiation", "negociacion", "tariff", "arancel", "geopolit", "wto", "omc"]
-    enterprise_terms = ["business plan", "investment", "financial model", "feasibility", "private sector", "agribusiness"]
-    if opportunity_type == "Firma" and any(term in norm for term in enterprise_terms):
-        return "Empresarial"
-    if any(term in norm for term in trade_terms):
-        return "Comercio y Geopolítica"
-    if any(term in norm for term in enterprise_terms):
-        return "Empresarial"
-    return "ICyT, Productividad y Desarrollo"
-
+    # La clasificación replica las líneas de servicio de la propuesta institucional.
+    return dominant_ceo_pillar(text)
 
 def assess(opp: Opportunity, today: Optional[date] = None) -> Assessment:
     today = today or date.today()
@@ -371,26 +365,27 @@ def assess(opp: Opportunity, today: Optional[date] = None) -> Assessment:
 
     sector = contains_sector(full_text)
     if sector:
-        score += 25
+        score += 20
     else:
-        reasons.append("Sin afinidad temática suficiente")
+        reasons.append("Sin contexto agroalimentario suficiente")
 
     strong = contains_strong_procurement(full_text)
     weak = contains_weak_procurement(full_text)
     if strong:
-        score += 25
+        score += 20
     elif weak:
-        score += 10
+        score += 8
         reasons.append("Señal contractual débil")
     else:
-        reasons.append("No se confirmó una convocatoria/contratación")
+        reasons.append("No se confirmó una convocatoria o contratación")
 
     country = identify_country(opp)
     region = opp.region.strip() if opp.region else infer_region(country, full_text)
-    if is_alc_or_global(country, region, full_text):
-        score += 20
+    geographic_fit = is_alc_or_global(country, region, full_text)
+    if geographic_fit:
+        score += 15
     elif country == "A verificar":
-        score += 5
+        score += 3
         reasons.append("País o alcance geográfico sin confirmar")
     else:
         reasons.append("Fuera del foco ALC/global: {}".format(country))
@@ -399,38 +394,43 @@ def assess(opp: Opportunity, today: Optional[date] = None) -> Assessment:
     if deadline:
         if deadline < today:
             return _assessment("reject", min(score, 30), reasons + ["Fecha límite vencida"], opp, country, region)
-        score += 15
-        days_left = (deadline - today).days
-        if days_left < 5:
+        score += 10
+        if (deadline - today).days < 5:
             reasons.append("Plazo de postulación muy corto")
     else:
         reasons.append("Fecha límite no verificada")
 
     if opp.source in TRUSTED_DIRECT_SOURCES and opp.source_mode == "direct":
-        score += 10
+        score += 5
     elif opp.source_mode == "exploratory":
-        score += int(max(0.0, min(5.0, opp.source_score * 5.0)))
+        score += int(max(0.0, min(3.0, opp.source_score * 3.0)))
         reasons.append("Fuente exploratoria: requiere revisión humana")
     else:
-        score += 5
+        score += 3
 
     if opp.reference:
         score += 5
     else:
         reasons.append("Referencia oficial no identificada")
 
-    # Reglas duras: no aceptar fuera de ALC/global ni sin señal sectorial/contractual.
+    ceo_score, ceo_reasons, _ = evaluate_ceo_fit(full_text)
+    score += ceo_score
+    reasons.extend(reason for reason in ceo_reasons if reason not in reasons)
+
+    # Reglas de admisión: afinidad sectorial, contractual, geográfica y estratégica.
     if not sector:
-        decision = "reject" if not strong else "stage"
+        decision = "reject"
     elif not strong:
-        decision = "stage" if weak else "reject"
-    elif not is_alc_or_global(country, region, full_text):
+        decision = "stage" if weak and ceo_score >= 8 and geographic_fit else "reject"
+    elif not geographic_fit:
+        decision = "reject"
+    elif ceo_score < 8:
         decision = "reject"
     elif opp.source_mode == "exploratory":
-        decision = "stage"
+        decision = "stage" if ceo_score >= 8 and score >= 55 else "reject"
     elif deadline is None:
         decision = "stage"
-    elif score >= 75:
+    elif score >= 75 and ceo_score >= 8:
         decision = "accept"
     elif score >= 50:
         decision = "stage"
@@ -438,7 +438,6 @@ def assess(opp: Opportunity, today: Optional[date] = None) -> Assessment:
         decision = "reject"
 
     return _assessment(decision, score, reasons, opp, country, region)
-
 
 def _assessment(decision: str, score: int, reasons: List[str], opp: Opportunity,
                 country: str, region: str) -> Assessment:

@@ -1338,10 +1338,13 @@ with st.sidebar:
             "📊  Pipeline CEO",
             "📥  Carga manual de oportunidades",
             "🤝  Socios",
+            "🔎 REVISIÓN DE CANDIDATOS",
         ],
         label_visibility="collapsed",
         key="nav_page",
     )
+    if _radio_val == '🔎 REVISIÓN DE CANDIDATOS':
+        st.switch_page('pages/6_Revision_de_candidatos.py')
 
     nav_page = _radio_val
 

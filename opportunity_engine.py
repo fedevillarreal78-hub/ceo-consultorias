@@ -120,7 +120,7 @@ HARD_EXCLUSION_TERMS = [
     "press release", "news release", "newsletter", "blog post", "policy brief",
     "research paper", "working paper", "annual report", "informe anual", "webinar",
     "training course", "curso en línea", "course registration", "curriculum vitae",
-    "resume ", "profile", "wikipedia", "management plan", "meeting report",
+    "resume ", "wikipedia", "meeting report",
     "procurement plan", "project appraisal document", "evaluation report",
     "supply of agricultural", "supply and delivery", "purchase of", "procurement of goods",
     "vehicles", "vehículos", "equipment", "construction works", "civil works",
@@ -229,7 +229,8 @@ def parse_date(value: str) -> Optional[date]:
     value = value.replace("Sept", "Sep")
     patterns = [
         "%Y-%m-%d", "%d-%b-%Y", "%d-%B-%Y", "%d %b %Y", "%d %B %Y",
-        "%d/%m/%Y", "%m/%d/%Y", "%Y/%m/%d", "%b %d, %Y", "%B %d, %Y",
+        "%d/%m/%Y", "%m/%d/%Y", "%Y/%m/%d", "%d/%b/%Y", "%d/%B/%Y",
+        "%b %d, %Y", "%B %d, %Y",
     ]
     for fmt in patterns:
         try:

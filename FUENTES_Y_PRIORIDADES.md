@@ -16,12 +16,22 @@ Las fuentes se dividen en dos categorías:
 
 ## Fuentes exploratorias con Tavily
 
-Las búsquedas usan `search_depth="basic"`, máximo 8 resultados, dominios breves y puntaje mínimo 0,65. Se organizan en:
+Las búsquedas usan por defecto `search_depth="advanced"`, máximo 10 resultados,
+contenido completo para enriquecer metadatos y puntaje exploratorio mínimo 0,45.
+Se organizan en:
 
 - BID, CAF, BCIE, IICA y FONTAGRO.
 - CGIAR, IFPRI, Alliance Bioversity-CIAT, CIMMYT y CATIE.
 - GIZ, AECID, AFD/Expertise France y TED.
 - UNGM, IFAD, WFP, ILO y Devex.
+- Gobiernos y portales de contratación pública de ALC.
+- Fondos climáticos, fundaciones e inversión de impacto.
+- Empresas, asociaciones y organizaciones de cadenas de valor.
+- Redes de cooperación científica y bienes públicos regionales.
+
+El perfil sigue la oferta publicada por Grupo CEO: políticas y estrategia;
+mercados, comercio e inversiones; diseño y gestión de proyectos; bioeconomía,
+CTI, geopolítica, regulación, cooperación regional y transformación productiva.
 
 Ningún resultado de Tavily entra automáticamente al pipeline.
 

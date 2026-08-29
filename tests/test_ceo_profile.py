@@ -1,6 +1,6 @@
 import unittest
 
-from ceo_profile import dominant_ceo_pillar, evaluate_ceo_fit
+from ceo_profile import CEO_TAVILY_SEARCH_GROUPS, dominant_ceo_pillar, evaluate_ceo_fit
 
 
 class CEOProfileTests(unittest.TestCase):
@@ -37,6 +37,12 @@ class CEOProfileTests(unittest.TestCase):
         self.assertEqual(dominant_ceo_pillar(text), "Diseño y gestión de proyectos")
         score, _, _ = evaluate_ceo_fit(text)
         self.assertGreaterEqual(score, 11)
+
+    def test_current_ceo_client_markets_are_searched(self):
+        names = {group["name"] for group in CEO_TAVILY_SEARCH_GROUPS}
+        self.assertIn("Gobiernos y contratación pública ALC", names)
+        self.assertIn("Fondos, fundaciones e inversión de impacto", names)
+        self.assertIn("Empresas, asociaciones y cadenas de valor", names)
 
 
 if __name__ == "__main__":

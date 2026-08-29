@@ -10,7 +10,7 @@ import re
 import unicodedata
 from typing import Dict, List, Sequence, Tuple
 
-CEO_PROFILE_VERSION = "2026.08"
+CEO_PROFILE_VERSION = "2026.08.2"
 
 PILLARS: Dict[str, Sequence[str]] = {
     "Políticas y estrategia institucional": (
@@ -33,6 +33,9 @@ PILLARS: Dict[str, Sequence[str]] = {
         "investment structuring", "estructuracion de inversiones", "feasibility study",
         "estudio de factibilidad", "business case", "agribusiness", "agroindustria",
         "competitiveness", "competitividad", "price transmission", "transmision de precios",
+        "export strategy", "estrategia exportadora", "trade policy", "politica comercial",
+        "international negotiations", "negociaciones internacionales", "standards and certification",
+        "normas y certificacion", "productive transformation", "transformacion productiva",
     ),
     "Diseño y gestión de proyectos": (
         "project formulation", "formulacion de proyectos", "project design", "diseño de proyectos",
@@ -44,6 +47,8 @@ PILLARS: Dict[str, Sequence[str]] = {
         "desarrollo de alianzas", "capacity building", "fortalecimiento de capacidades",
         "scaling", "escalamiento", "knowledge transfer", "transferencia de capacidades",
         "results framework", "marco de resultados",
+        "investment plan", "plan de inversiones", "bankable project", "proyecto financiable",
+        "project pipeline", "cartera de proyectos", "public private partnership", "alianza publico privada",
     ),
     "Bioeconomía, CTI e innovación": (
         "bioeconomy", "bioeconomia", "biotechnology", "biotecnologia", "innovation system",
@@ -54,6 +59,8 @@ PILLARS: Dict[str, Sequence[str]] = {
         "circular economy", "economia circular", "green finance", "finanzas verdes", "carbon market",
         "mercado de carbono", "biodiversity finance", "financiamiento de biodiversidad",
         "resilient food systems", "sistemas alimentarios resilientes",
+        "gene editing", "edicion genica", "bioinformatics", "bioinformatica", "biological assets",
+        "activos biologicos", "regional public goods", "bienes publicos regionales",
     ),
 }
 
@@ -77,6 +84,8 @@ CLIENT_CONTEXT_TERMS: Sequence[str] = (
     "development bank", "banco de desarrollo", "international organization", "organismo internacional",
     "development fund", "fondo de desarrollo", "private sector", "sector privado", "association",
     "asociacion", "foundation", "fundacion", "civil society", "sociedad civil",
+    "chamber of commerce", "camara empresarial", "producer organization", "organizacion de productores",
+    "investor", "inversor", "impact fund", "fondo de impacto", "philanthropy", "filantropia",
 )
 
 REGIONAL_TERMS: Sequence[str] = (
@@ -153,6 +162,42 @@ CEO_TAVILY_SEARCH_GROUPS = [
             "international consultant rural development bioeconomy project evaluation Caribbean terms of reference",
             "consultor individual políticas públicas agricultura comercio evaluación América Latina convocatoria",
             "consultor especialista desenvolvimento rural bioeconomia comércio agrícola América Latina edital",
+        ],
+    },
+    {
+        "name": "Gobiernos y contratación pública ALC",
+        "domains": ["argentina.gob.ar", "comprar.gob.ar", "mercadopublico.cl", "colombiacompra.gov.co", "compraspublicas.gob.ec", "cepal.org"],
+        "queries": [
+            "licitación consultoría política agroindustrial bioeconomía desarrollo rural asistencia técnica",
+            "servicios de consultoría estrategia agroalimentaria comercio innovación evaluación gobierno",
+            "consultoria desenvolvimento rural bioeconomia política agrícola contratação pública",
+        ],
+    },
+    {
+        "name": "Fondos, fundaciones e inversión de impacto",
+        "domains": ["greenclimate.fund", "thegef.org", "adaptation-fund.org", "idrc-crdi.ca", "fundacionavina.org", "rockefellerfoundation.org"],
+        "queries": [
+            "request for proposals consultant food systems bioeconomy Latin America foundation fund",
+            "technical assistance sustainable agriculture investment project design Latin America grant",
+            "consultoría inversión de impacto cadenas de valor sostenibilidad agroalimentaria América Latina",
+        ],
+    },
+    {
+        "name": "Empresas, asociaciones y cadenas de valor",
+        "domains": ["wbcsd.org", "solidaridadnetwork.org", "rainforest-alliance.org", "fairtrade.net", "conservation.org", "tnc.org"],
+        "queries": [
+            "RFP consultant sustainable agriculture value chains market strategy Latin America",
+            "consultancy agribusiness competitiveness traceability investment bioeconomy Latin America",
+            "consultoría cadenas agroindustriales mercados regulación sostenibilidad asociación empresarial",
+        ],
+    },
+    {
+        "name": "Cooperación científica y bienes públicos regionales",
+        "domains": ["fontagro.org", "procisur.org.uy", "foragro.org", "catie.ac.cr", "cgiar.org", "iica.int"],
+        "queries": [
+            "consultancy regional public goods agricultural innovation science technology Latin America",
+            "call for consultants bioinformatics gene editing digital agriculture regional cooperation",
+            "consultoría cooperación científica innovación agropecuaria bienes públicos regionales",
         ],
     },
 ]

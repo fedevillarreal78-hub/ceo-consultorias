@@ -1,7 +1,7 @@
 import unittest
 from datetime import date
 
-from opportunity_engine import Opportunity, assess, canonical_url, identify_country, likely_duplicate
+from opportunity_engine import Opportunity, assess, canonical_url, identify_country, likely_duplicate, parse_date
 
 
 class OpportunityEngineTests(unittest.TestCase):
@@ -101,6 +101,9 @@ class OpportunityEngineTests(unittest.TestCase):
             "Organización": "UNDP", "Fecha límite": "2030-01-01", "Enlace": "",
         }]
         self.assertTrue(likely_duplicate(opp, rows))
+
+    def test_slash_month_deadline_is_parsed(self):
+        self.assertEqual(parse_date("09/Sep/2026"), date(2026, 9, 9))
 
 
 if __name__ == "__main__":

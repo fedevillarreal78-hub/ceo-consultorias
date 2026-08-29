@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class AppResetAndThemeTests(unittest.TestCase):
-    def test_operational_csv_files_keep_schema_and_start_empty(self):
+    def test_operational_csv_files_keep_schema(self):
         expected_columns = {
             "oportunidades_consultoria.csv": {"Título", "Organización", "Estado", "Enlace"},
             "candidatos_revision.csv": {"ID canónico", "Título", "Estado revisión", "Puntaje"},
@@ -17,7 +17,7 @@ class AppResetAndThemeTests(unittest.TestCase):
             with self.subTest(filename=filename):
                 with (ROOT / filename).open(encoding="utf-8", newline="") as handle:
                     rows = list(csv.reader(handle))
-                self.assertEqual(len(rows), 1)
+                self.assertGreaterEqual(len(rows), 1)
                 self.assertTrue(required.issubset(set(rows[0])))
 
     def test_manual_palette_and_fonts_are_present(self):

@@ -423,7 +423,11 @@ def assess(opp: Opportunity, today: Optional[date] = None) -> Assessment:
     # expresamente fuera de foco; lo plausible pasa a revisión humana.
     geography_unknown = country == "A verificar"
     consulting_signal = strong or weak
-    plausible_fit = consulting_signal and ceo_score >= 5 and (geographic_fit or geography_unknown)
+    plausible_fit = (
+        consulting_signal
+        and (sector or ceo_score >= 5)
+        and (geographic_fit or geography_unknown)
+    )
 
     if not geographic_fit and not geography_unknown:
         decision = "reject"
@@ -431,7 +435,7 @@ def assess(opp: Opportunity, today: Optional[date] = None) -> Assessment:
         decision = "reject"
     elif not sector and not plausible_fit:
         decision = "reject"
-    elif ceo_score < 5:
+    elif ceo_score < 5 and not sector:
         decision = "reject"
     elif opp.source_mode == "exploratory":
         decision = "stage" if plausible_fit and score >= 35 else "reject"

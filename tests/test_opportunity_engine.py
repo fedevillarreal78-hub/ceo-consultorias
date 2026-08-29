@@ -74,6 +74,17 @@ class OpportunityEngineTests(unittest.TestCase):
         )
         self.assertEqual(assess(opp, today=date(2026, 8, 8)).decision, "reject")
 
+    def test_sector_match_with_sparse_metadata_is_reviewed(self):
+        opp = Opportunity(
+            title="Consultancy for agricultural market access",
+            organization="IICA", url="https://iica.int/opportunity/3",
+            source="Tavily – Mercados", source_mode="exploratory",
+            country="", notice_type="Consultancy",
+            summary="Agricultural market access assignment in Latin America",
+            source_score=0.61,
+        )
+        self.assertEqual(assess(opp, today=date(2026, 8, 8)).decision, "stage")
+
     def test_canonical_url_removes_tracking(self):
         a = canonical_url("https://www.example.org/a/?utm_source=x&id=7#top")
         b = canonical_url("https://example.org/a?id=7")

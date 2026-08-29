@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import html as _html
 import os
@@ -37,17 +39,17 @@ GITHUB_REPO   = "ceo-consultorias"
 GITHUB_BRANCH = "main"
 
 # ── Paleta CEO ─────────────────────────────────────────────────────────────────
-GREEN_DARK   = "#0F2D1F"
-GREEN_MID    = "#2D6A4F"
-GREEN_ACCENT = "#40916C"
-GREEN_LIGHT  = "#52B788"
-BG_SAGE      = "#F0F7F2"
-BG_HERO_FROM = "#D8EFE1"
-BG_HERO_TO   = "#95C9B4"
+GREEN_DARK   = "#0D3B2E"
+GREEN_MID    = "#0D3B2E"
+GREEN_ACCENT = "#6DB16A"
+GREEN_LIGHT  = "#82C47E"
+BG_SAGE      = "#F4FAF6"
+BG_HERO_FROM = "#F4FAF6"
+BG_HERO_TO   = "#E5F1E7"
 WHITE        = "#FFFFFF"
-TEXT_BODY    = "#2C3E35"
-BORDER_LIGHT = "#C8E0CF"
-SURFACE      = "#FAFCFB"
+TEXT_BODY    = "#1A1A1A"
+BORDER_LIGHT = "#DDDDDD"
+SURFACE      = "#FFFFFF"
 
 # Prioridades
 COLOR_ALTA  = {"bg": "#FFE5E5", "border": "#D32F2F", "badge": "🔴"}
@@ -763,9 +765,10 @@ def generar_pdf(df_all: pd.DataFrame, df_socios_pdf: pd.DataFrame, hoy: date) ->
 
 st.markdown(f"""
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap');
 
-  html, body, [class*="css"] {{ font-family: 'DM Sans', sans-serif !important; }}
+  html, body, [class*="css"] {{ font-family: 'Source Sans 3', sans-serif !important; }}
+  h1, h2, h3, h4, h5, h6, button, label {{ font-family: 'Montserrat', sans-serif !important; }}
   .main .block-container {{ padding: 0 !important; max-width: 100% !important; }}
   #MainMenu, footer {{ visibility: hidden; }}
   header[data-testid="stHeader"] {{ background: transparent !important; }}
@@ -781,17 +784,14 @@ st.markdown(f"""
 
   /* ── Sidebar ── */
   section[data-testid="stSidebar"] {{
-    background: #0A1A10;
-    min-width: 280px !important;
+    background: {GREEN_DARK};
+    min-width: 264px !important;
   }}
   section[data-testid="stSidebar"] * {{ color: {WHITE} !important; }}
 
   /* ── Navegación lateral ── */
   section[data-testid="stSidebar"] .stRadio > label {{
     display: none;
-  }}
-  section[data-testid="stSidebar"] [role="radiogroup"] [data-baseweb="radio"]:nth-child(2) {{
-    display: none !important;
   }}
   section[data-testid="stSidebar"] .stRadio [role="radiogroup"] {{
     display: flex; flex-direction: column; gap: 3px;
@@ -896,6 +896,13 @@ st.markdown(f"""
     font-weight: 600 !important;
     padding: 6px 10px !important;
     background: transparent !important;
+  }}
+  section[data-testid="stSidebar"] details summary span,
+  section[data-testid="stSidebar"] details summary p,
+  section[data-testid="stSidebar"] details summary svg {{
+    color: {WHITE} !important;
+    fill: {WHITE} !important;
+    visibility: visible !important;
   }}
   section[data-testid="stSidebar"] details > div,
   section[data-testid="stSidebar"] .streamlit-expanderContent {{
@@ -1317,18 +1324,6 @@ with st.sidebar:
 
     st.divider()
 
-    # ── Pipeline CEO — sección destacada ──────────────────────────────────
-    if st.button(
-        "📊  Pipeline CEO",
-        key="btn_pipeline",
-        use_container_width=True,
-        help="Ver el pipeline de oportunidades gestionadas",
-    ):
-        st.session_state["nav_page"] = "📊  Pipeline CEO"
-        st.rerun()
-
-    st.divider()
-
     # ── Navegación principal ───────────────────────────────────────────────
     st.markdown(
         "<div style='font-size:0.68rem;font-weight:700;text-transform:uppercase;"
@@ -1339,16 +1334,15 @@ with st.sidebar:
     _radio_val = st.radio(
         "nav",
         options=[
-            "📋  Oportunidades",
             "📊  Pipeline CEO",
-            "📥  Carga manual de oportunidades",
+            "🔎  Revisión de candidatos",
+            "📥  Carga manual",
             "🤝  Socios",
-            "🔎 REVISIÓN DE CANDIDATOS",
         ],
         label_visibility="collapsed",
         key="nav_page",
     )
-    if _radio_val == '🔎 REVISIÓN DE CANDIDATOS':
+    if _radio_val == "🔎  Revisión de candidatos":
         st.session_state["_render_revision_candidatos"] = True
     nav_page = _radio_val
 
@@ -1529,63 +1523,18 @@ with st.sidebar:
                 st.error("Error en el scraper:")
                 st.code((result.stderr or result.stdout)[-2000:])
 
-    # ── Agregar oportunidad manualmente ───────────────────────────────────
-    st.markdown("---")
-    st.markdown(
-        "<div style='font-size:0.68rem;font-weight:700;text-transform:uppercase;"
-        "letter-spacing:0.1em;color:rgba(255,255,255,0.45);padding-bottom:0.3rem;'>"
-        "Agregar manualmente</div>",
-        unsafe_allow_html=True,
-    )
-    with st.expander("➕ Nueva oportunidad"):
-        with st.form("form_manual_opp", clear_on_submit=True):
-            m_titulo = st.text_input("Título *")
-            m_org    = st.text_input("Organización *")
-            m_enlace = st.text_input("Enlace (URL)")
-            c1, c2   = st.columns(2)
-            with c1:
-                m_fecha  = st.text_input("Fecha límite")
-                m_tipo   = st.selectbox("Tipo", ["Ambos", "Firma", "Individual"])
-            with c2:
-                m_region = st.text_input("Región", value="A verificar")
-                m_afin   = st.selectbox("Afinidad", ["Ambos", "ICyT, Productividad y Desarrollo",
-                                                       "Comercio y Geopolítica", "Empresarial"])
-            m_monto  = st.text_input("Monto estimado (USD)", value="")
-            submitted = st.form_submit_button("Agregar al pipeline", use_container_width=True)
-            if submitted:
-                if not m_titulo.strip() or not m_org.strip():
-                    st.error("Título y Organización son obligatorios.")
-                else:
-                    _df_cur = load_data()
-                    nueva = {
-                        "Título": m_titulo.strip(),
-                        "Organización": m_org.strip(),
-                        "Tipo": m_tipo,
-                        "Región": m_region.strip() or "A verificar",
-                        "País": "—",
-                        "Fecha límite": m_fecha.strip() or "A verificar",
-                        "Enlace": m_enlace.strip(),
-                        "Afinidad": m_afin,
-                        "Prioridad": "Alta",
-                        "Estado": "Identificada",
-                        "Monto estimado (USD)": m_monto.strip(),
-                        "Consultor": "—",
-                        "Observaciones": f"Agregada manualmente por {usuario_activo}",
-                        "Socio vinculado": "",
-                        "Votos descarte": "",
-                    }
-                    import pandas as _pd2
-                    _df_cur = _pd2.concat([_df_cur, _pd2.DataFrame([nueva])],
-                                          ignore_index=True)
-                    save_df(_df_cur)
-                    st.success(f"✅ '{m_titulo[:40]}' agregada al pipeline.")
-                    st.rerun()
-
     st.markdown(
         f"<div style='font-size:0.7rem;color:rgba(255,255,255,0.25);text-align:center;"
         f"margin-top:0.4rem;'>grupo-ceo.com · {date.today().year}</div>",
         unsafe_allow_html=True,
     )
+
+# La revisión tiene su propio encabezado y métricas; no necesita el hero del pipeline.
+if st.session_state.get("_render_revision_candidatos", False):
+    from revision_candidatos import render_revision_candidatos
+
+    render_revision_candidatos()
+    st.stop()
 
 # ── Filtrar y ordenar ─────────────────────────────────────────────────────────
 
@@ -1629,8 +1578,8 @@ st.markdown(f"""
 <div class="ceo-hero">
   <div class="ceo-hero-logo">{logo_html}</div>
   <div class="ceo-hero-text">
-    <h1>Oportunidades de Consultoría</h1>
-    <p>Monitoreo de convocatorias · Perfiles ICyT, Comercio &amp; CEO · ALC &amp; Global</p>
+    <h1>Pipeline de consultorías</h1>
+    <p>Oportunidades priorizadas para Grupo CEO · ALC y alcance global</p>
   </div>
   <div class="ceo-hero-dates">
     <div class="ceo-hero-date">📅 {hoy.strftime('%d %b %Y')}</div>
@@ -2097,7 +2046,7 @@ elif nav_page == "📊  Pipeline CEO":
 # TAB 3 — EDITAR DATOS
 # ════════════════════════════════════════════════════════════════════════════
 
-elif nav_page == "📥  Carga manual de oportunidades":
+elif nav_page == "📥  Carga manual":
     st.markdown("**Editá Estado, Consultor, Monto y País directamente en la tabla.**")
     if _is_cloud:
         st.info("Versión en la nube: guardá los cambios y descargá el CSV para subirlo al repositorio.", icon="ℹ️")
@@ -2346,8 +2295,3 @@ elif nav_page == "🤝  Socios":
             save_socios(df_socios_upd)
             st.success(f"✅ **{ns_nombre.strip()}** agregado como {ns_cat}.")
             st.rerun()
-
-# --- Render central: revisión de candidatos ---
-if st.session_state.get("_render_revision_candidatos", False):
-    from revision_candidatos import render_revision_candidatos
-    render_revision_candidatos()

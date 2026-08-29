@@ -5,15 +5,14 @@ import streamlit as st
 
 
 CEO_COLORS = {
-    "navy": "#001D2C",
-    "teal": "#008672",
     "green": "#0D3B2E",
     "lime": "#6DB16A",
     "ink": "#1A1A1A",
     "paper": "#F4FAF6",
-    "soft": "#EAF3E8",
+    "soft": "#E8F3EA",
     "white": "#FFFFFF",
-    "muted": "#667570",
+    "muted": "#555555",
+    "border": "#DDDDDD",
 }
 
 
@@ -25,15 +24,14 @@ def apply_ceo_theme() -> None:
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap');
 
         :root {
-            --ceo-navy: #001D2C;
-            --ceo-teal: #008672;
             --ceo-green: #0D3B2E;
             --ceo-lime: #6DB16A;
             --ceo-ink: #1A1A1A;
             --ceo-paper: #F4FAF6;
-            --ceo-soft: #EAF3E8;
+            --ceo-soft: #E8F3EA;
             --ceo-white: #FFFFFF;
-            --ceo-muted: #667570;
+            --ceo-muted: #555555;
+            --ceo-border: #DDDDDD;
         }
 
         html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] * {
@@ -54,7 +52,7 @@ def apply_ceo_theme() -> None:
         p, li, [data-testid="stCaptionContainer"] { line-height: 1.55 !important; }
 
         [data-testid="stSidebar"] {
-            background: var(--ceo-navy) !important;
+            background: var(--ceo-green) !important;
             border-right: 1px solid rgba(255,255,255,.08) !important;
         }
         [data-testid="stSidebar"] h1,
@@ -69,8 +67,8 @@ def apply_ceo_theme() -> None:
         [data-testid="stSidebar"] hr { border-color: rgba(255,255,255,.18) !important; }
 
         .stButton > button, .stFormSubmitButton > button, .stDownloadButton > button {
-            background: var(--ceo-teal) !important;
-            border: 1px solid var(--ceo-teal) !important;
+            background: var(--ceo-green) !important;
+            border: 1px solid var(--ceo-green) !important;
             color: var(--ceo-white) !important;
             border-radius: 8px !important;
             min-height: 42px !important;
@@ -89,7 +87,7 @@ def apply_ceo_theme() -> None:
         [data-testid="stMetric"] {
             background: var(--ceo-white) !important;
             border: 1px solid #D7E8DF !important;
-            border-top: 3px solid var(--ceo-teal) !important;
+            border-top: 3px solid var(--ceo-lime) !important;
             border-radius: 10px !important;
             padding: 14px 16px !important;
             box-shadow: 0 4px 14px rgba(0,29,44,.05) !important;
@@ -115,7 +113,7 @@ def apply_ceo_theme() -> None:
         }
         .stTabs [aria-selected="true"] {
             background: var(--ceo-white) !important;
-            border-bottom: 3px solid var(--ceo-teal) !important;
+            border-bottom: 3px solid var(--ceo-lime) !important;
         }
 
         div[data-baseweb="select"] > div,
@@ -128,7 +126,7 @@ def apply_ceo_theme() -> None:
 
         .ceo-section-header {
             background: linear-gradient(120deg, #EAF3E8 0%, #D7EDE4 100%);
-            border-left: 5px solid var(--ceo-teal);
+            border-left: 5px solid var(--ceo-lime);
             border-radius: 10px;
             padding: 18px 22px;
             margin: 4px 0 18px 0;
@@ -138,15 +136,15 @@ def apply_ceo_theme() -> None:
 
         .ceo-candidate-card {
             background: var(--ceo-white);
-            border: 1px solid #D7E8DF;
-            border-left: 5px solid var(--ceo-teal);
+            border: 1px solid var(--ceo-border);
+            border-left: 5px solid var(--ceo-lime);
             border-radius: 10px;
             padding: 18px 20px;
             margin: 10px 0 16px 0;
             box-shadow: 0 5px 16px rgba(0,29,44,.05);
         }
         .ceo-kicker {
-            color: var(--ceo-teal);
+            color: var(--ceo-green);
             font-family: "Montserrat", Arial, sans-serif !important;
             font-size: .76rem;
             font-weight: 700;

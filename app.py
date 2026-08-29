@@ -28,6 +28,7 @@ apply_ceo_theme()
 st.session_state["_render_revision_candidatos"] = False
 
 CSV_PATH      = Path(__file__).parent / "oportunidades_consultoria.csv"
+STAGING_PATH  = Path(__file__).parent / "candidatos_revision.csv"
 SOCIOS_CSV    = Path(__file__).parent / "socios_estrategicos.csv"
 SCRIPT_PATH   = Path(__file__).parent / "buscar_consultorias.py"
 LOGO_PATH     = Path(__file__).parent / "logo_ceo.png"
@@ -1331,6 +1332,8 @@ with st.sidebar:
         "Navegación</div>",
         unsafe_allow_html=True,
     )
+    if st.session_state.pop("_open_revision_after_search", False):
+        st.session_state["nav_page"] = "🔎  Revisión de candidatos"
     _radio_val = st.radio(
         "nav",
         options=[
@@ -1508,6 +1511,7 @@ with st.sidebar:
                                          f"Stats búsqueda [{ts}]")
                 prog.progress(100, text="¡Listo!")
                 # Mostrar resumen
+                _revision = 0
                 try:
                     _st = json.load(open(_stats_path))
                     _pipeline = int(_st.get("nuevas_pipeline", 0) or 0)
@@ -1533,6 +1537,8 @@ with st.sidebar:
                 with st.expander("Ver log de búsqueda"):
                     st.code((result.stdout or "")[-3000:])
                 st.cache_data.clear()
+                if _revision > 0:
+                    st.session_state["_open_revision_after_search"] = True
                 st.rerun()
             else:
                 prog.empty()
@@ -1834,6 +1840,27 @@ if nav_page == "📋  Oportunidades":
 
 elif nav_page == "📊  Pipeline CEO":
     df_c = load_data()
+
+    pending_review = 0
+    try:
+        staging_preview = pd.read_csv(STAGING_PATH, dtype=str).fillna("")
+        staging_status = staging_preview.get("Estado revisión", pd.Series(dtype=str)).replace("", "Pendiente")
+        pending_review = int(staging_status.isin({"Pendiente", "Pospuesta"}).sum())
+    except (FileNotFoundError, pd.errors.EmptyDataError, UnicodeDecodeError):
+        pass
+
+    if pending_review:
+        st.info(
+            f"Hay {pending_review} oportunidades encontradas esperando revisión. "
+            "Todavía no aparecen en el pipeline porque necesitan validación humana."
+        )
+        if st.button(
+            f"Revisar {pending_review} oportunidades",
+            type="primary",
+            key="open_pending_review",
+        ):
+            st.session_state["_open_revision_after_search"] = True
+            st.rerun()
 
     total_c    = len(df_c)
     pipeline_c = df_c["Monto estimado (USD)"].sum()

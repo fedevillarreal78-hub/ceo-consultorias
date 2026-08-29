@@ -1,49 +1,49 @@
 {
-  "fecha": "2026-08-29 22:17",
+  "fecha": "2026-08-29 22:19",
   "version_motor": "2.0",
-  "tavily_activo": false,
+  "tavily_activo": true,
   "ungm_token_configurado": false,
   "lookback_days": 21,
-  "total_bruto": 589,
+  "total_bruto": 634,
   "nuevas_pipeline": 0,
   "nuevas_revision": 1,
-  "duplicadas": 0,
-  "rechazadas": 588,
-  "ocurrencias_motivos_rechazo": 3500,
+  "duplicadas": 1,
+  "rechazadas": 632,
+  "ocurrencias_motivos_rechazo": 3640,
   "total_csv": 0,
-  "total_revision_pendiente": 1,
+  "total_revision_pendiente": 2,
   "por_fuente": {
     "UNDP": {
       "brutas": 571,
-      "segundos": 4.48
+      "segundos": 3.99
     },
     "World Bank": {
       "brutas": 17,
-      "segundos": 13.43
+      "segundos": 10.75
     },
     "ReliefWeb": {
       "brutas": 0,
-      "segundos": 0.39
+      "segundos": 0.34
     },
     "FAO": {
       "brutas": 1,
-      "segundos": 0.3
+      "segundos": 0.21
     },
     "Tavily": {
-      "brutas": 0,
-      "segundos": 0.0
+      "brutas": 45,
+      "segundos": 69.22
     }
   },
   "errores_fuente": {},
   "motivos_rechazo": {
-    "Sin contexto agroalimentario suficiente": 528,
-    "Señal contractual débil": 94,
+    "Sin contexto agroalimentario suficiente": 532,
+    "Señal contractual débil": 95,
     "Fuera del foco ALC/global: KYRGYZSTAN": 6,
-    "Fecha límite no verificada": 524,
+    "Fecha límite no verificada": 546,
     "Sin coincidencia clara con las líneas de servicio de Grupo CEO": 484,
-    "No se identifica con claridad un producto de consultoría": 441,
-    "Alineación estratégica baja con la oferta de Grupo CEO": 524,
-    "No se confirmó una convocatoria o contratación": 371,
+    "No se identifica con claridad un producto de consultoría": 455,
+    "Alineación estratégica baja con la oferta de Grupo CEO": 529,
+    "No se confirmó una convocatoria o contratación": 394,
     "Fuera del foco ALC/global: UZBEKISTAN": 7,
     "Contenido excluido: equipment": 23,
     "Fuera del foco ALC/global: MOZAMBIQUE": 6,
@@ -56,7 +56,7 @@
     "Contenido excluido: construction works": 1,
     "Fuera del foco ALC/global: SERBIA": 5,
     "Fuera del foco ALC/global: TUNISIA": 21,
-    "Alineación concentrada en: Diseño y gestión de proyectos": 14,
+    "Alineación concentrada en: Diseño y gestión de proyectos": 18,
     "Fuera del foco ALC/global: UKRAINE": 15,
     "Fuera del foco ALC/global: GAMBIA": 3,
     "Fuera del foco ALC/global: MADAGASCAR": 14,
@@ -64,7 +64,7 @@
     "Fuera del foco ALC/global: VIET NAM": 11,
     "Fuera del foco ALC/global: GHANA": 3,
     "Fuera del foco ALC/global: PHILIPPINES": 10,
-    "Alineación concentrada en: Mercados, comercio e inversiones": 6,
+    "Alineación concentrada en: Mercados, comercio e inversiones": 7,
     "Fuera del foco ALC/global: SPAIN": 2,
     "Fuera del foco ALC/global: KIRIBATI": 1,
     "Fuera del foco ALC/global: CONGO": 2,
@@ -81,7 +81,7 @@
     "Fuera del foco ALC/global: NIGER": 5,
     "Fuera del foco ALC/global: GUINEA": 5,
     "Fuera del foco ALC/global: MAURITIUS": 1,
-    "Alineación concentrada en: Políticas y estrategia institucional": 10,
+    "Alineación concentrada en: Políticas y estrategia institucional": 11,
     "Fuera del foco ALC/global: SYRIAN ARAB REPUBLIC": 7,
     "Fuera del foco ALC/global: GABON": 1,
     "Fuera del foco ALC/global: SRI LANKA": 4,
@@ -118,7 +118,7 @@
     "Fuera del foco ALC/global: AFGHANISTAN": 7,
     "Fuera del foco ALC/global: IRAQ": 1,
     "Fuera del foco ALC/global: IRAN": 1,
-    "Contenido excluido: management plan": 5,
+    "Contenido excluido: management plan": 6,
     "Fuera del foco ALC/global: SAMOA": 1,
     "Fuera del foco ALC/global: SIERRA LEONE": 2,
     "Fuera del foco ALC/global: Kosovo, UNSCR 1244 (1999)": 1,
@@ -159,9 +159,19 @@
     "Fuera del foco ALC/global: BAHRAIN": 1,
     "Fuera del foco ALC/global: MALI": 1,
     "Contenido excluido: profile": 1,
-    "Contenido excluido: webinar": 1,
-    "País o alcance geográfico sin confirmar": 1,
-    "Fecha límite vencida": 17
+    "Contenido excluido: webinar": 6,
+    "País o alcance geográfico sin confirmar": 2,
+    "Fecha límite vencida": 19,
+    "URL editorial/no contractual: /news/": 5,
+    "URL editorial/no contractual: /blog/": 2,
+    "Fuente exploratoria: requiere revisión humana": 22,
+    "Referencia oficial no identificada": 20,
+    "Contenido excluido: professor": 1,
+    "URL editorial/no contractual: /press/": 2,
+    "URL editorial/no contractual: openknowledge.fao.org": 1,
+    "URL editorial/no contractual: /events/": 1,
+    "Contenido excluido: press release": 1,
+    "Contenido excluido: phd": 1
   },
-  "creditos_tavily_estimados": 0
+  "creditos_tavily_estimados": 24
 }

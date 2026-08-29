@@ -53,6 +53,27 @@ class OpportunityEngineTests(unittest.TestCase):
         )
         self.assertEqual(assess(opp, today=date(2026, 8, 8)).decision, "stage")
 
+    def test_missing_deadline_is_reviewed_not_discarded(self):
+        opp = Opportunity(
+            title="Consultor individual para estrategia de bioeconomía rural",
+            organization="BID", url="https://iadb.org/consultoria/2",
+            source="Tavily – Consultorías individuales", source_mode="exploratory",
+            country="", deadline="A verificar", notice_type="Consultor individual",
+            summary="Evaluación de políticas agrícolas y cadenas de valor en América Latina",
+            source_score=0.72,
+        )
+        result = assess(opp, today=date(2026, 8, 8))
+        self.assertEqual(result.decision, "stage")
+        self.assertEqual(result.target_profile, "Consultor individual")
+
+    def test_non_contractual_content_stays_rejected(self):
+        opp = Opportunity(
+            title="Agricultural food systems newsletter", organization="FAO",
+            url="https://fao.org/newsletter/1", source="Tavily", source_mode="exploratory",
+            country="Regional/Global", summary="Latest research and news",
+        )
+        self.assertEqual(assess(opp, today=date(2026, 8, 8)).decision, "reject")
+
     def test_canonical_url_removes_tracking(self):
         a = canonical_url("https://www.example.org/a/?utm_source=x&id=7#top")
         b = canonical_url("https://example.org/a?id=7")

@@ -173,6 +173,7 @@ class Assessment:
     opportunity_type: str
     affinity: str
     priority: str
+    target_profile: str = "Grupo CEO"
 
 
 def strip_accents(value: str) -> str:
@@ -417,22 +418,28 @@ def assess(opp: Opportunity, today: Optional[date] = None) -> Assessment:
     score += ceo_score
     reasons.extend(reason for reason in ceo_reasons if reason not in reasons)
 
-    # Reglas de admisión: afinidad sectorial, contractual, geográfica y estratégica.
-    if not sector:
+    # Las ausencias de metadatos no prueban incompatibilidad. Se reservan los
+    # rechazos automáticos para exclusiones claras, vencimientos y geografías
+    # expresamente fuera de foco; lo plausible pasa a revisión humana.
+    geography_unknown = country == "A verificar"
+    consulting_signal = strong or weak
+    plausible_fit = consulting_signal and ceo_score >= 5 and (geographic_fit or geography_unknown)
+
+    if not geographic_fit and not geography_unknown:
         decision = "reject"
-    elif not strong:
-        decision = "stage" if weak and ceo_score >= 8 and geographic_fit else "reject"
-    elif not geographic_fit:
+    elif not consulting_signal:
         decision = "reject"
-    elif ceo_score < 8:
+    elif not sector and not plausible_fit:
+        decision = "reject"
+    elif ceo_score < 5:
         decision = "reject"
     elif opp.source_mode == "exploratory":
-        decision = "stage" if ceo_score >= 8 and score >= 55 else "reject"
-    elif deadline is None:
+        decision = "stage" if plausible_fit and score >= 35 else "reject"
+    elif deadline is None or geography_unknown or not sector or not strong:
         decision = "stage"
     elif score >= 75 and ceo_score >= 8:
         decision = "accept"
-    elif score >= 50:
+    elif score >= 45:
         decision = "stage"
     else:
         decision = "reject"
@@ -445,6 +452,7 @@ def _assessment(decision: str, score: int, reasons: List[str], opp: Opportunity,
     opportunity_type = classify_type(full_text)
     affinity = classify_affinity(full_text, opportunity_type)
     priority = "Alta" if score >= 80 else "Media" if score >= 60 else "Baja"
+    target_profile = "Consultor individual" if opportunity_type == "Individual" else "Grupo CEO"
     return Assessment(
         decision=decision,
         score=max(0, min(100, int(score))),
@@ -456,6 +464,7 @@ def _assessment(decision: str, score: int, reasons: List[str], opp: Opportunity,
         opportunity_type=opportunity_type,
         affinity=affinity,
         priority=priority,
+        target_profile=target_profile,
     )
 
 
@@ -523,7 +532,9 @@ def append_unique(path: Path, new_rows: Sequence[Dict[str, str]], columns: Seque
 
 
 def to_main_row(opp: Opportunity, assessment: Assessment) -> Dict[str, str]:
-    observations = "Fuente: {}. Puntaje automático: {}/100.".format(opp.source, assessment.score)
+    observations = "Fuente: {}. Perfil sugerido: {}. Puntaje automático: {}/100.".format(
+        opp.source, assessment.target_profile, assessment.score
+    )
     if assessment.reasons:
         observations += " Alertas: {}.".format("; ".join(assessment.reasons))
     return {
@@ -562,7 +573,9 @@ def to_staging_row(opp: Opportunity, assessment: Assessment) -> Dict[str, str]:
         "Fecha publicación": date_iso(opp.publication_date),
         "Resumen": re.sub(r"\s+", " ", opp.summary).strip()[:1200],
         "Puntaje": str(assessment.score),
-        "Motivos": "; ".join(assessment.reasons),
+        "Motivos": "Perfil sugerido: {}; {}".format(
+            assessment.target_profile, "; ".join(assessment.reasons)
+        ).rstrip("; "),
         "Estado revisión": "Pendiente",
         "Detectada": datetime.now().strftime("%Y-%m-%d %H:%M"),
     }

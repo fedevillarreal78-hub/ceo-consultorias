@@ -1,5 +1,5 @@
 {
-  "fecha": "2026-08-29 19:09",
+  "fecha": "2026-08-29 21:53",
   "version_motor": "2.0",
   "tavily_activo": false,
   "ungm_token_configurado": false,
@@ -7,26 +7,26 @@
   "total_bruto": 589,
   "nuevas_pipeline": 0,
   "nuevas_revision": 0,
-  "duplicadas": 6,
-  "rechazadas": 3473,
-  "total_csv": 1283,
+  "duplicadas": 0,
+  "rechazadas": 3504,
+  "total_csv": 0,
   "total_revision_pendiente": 0,
   "por_fuente": {
     "UNDP": {
       "brutas": 571,
-      "segundos": 3.8
+      "segundos": 3.77
     },
     "World Bank": {
       "brutas": 17,
-      "segundos": 9.09
+      "segundos": 12.57
     },
     "ReliefWeb": {
       "brutas": 0,
-      "segundos": 0.48
+      "segundos": 0.31
     },
     "FAO": {
       "brutas": 1,
-      "segundos": 1.52
+      "segundos": 0.26
     },
     "Tavily": {
       "brutas": 0,
@@ -35,14 +35,14 @@
   },
   "errores_fuente": {},
   "motivos_rechazo": {
-    "Sin contexto agroalimentario suficiente": 526,
+    "Sin contexto agroalimentario suficiente": 528,
     "Señal contractual débil": 94,
     "Fuera del foco ALC/global: KYRGYZSTAN": 6,
-    "Fecha límite no verificada": 519,
-    "Sin coincidencia clara con las líneas de servicio de Grupo CEO": 481,
-    "No se identifica con claridad un producto de consultoría": 438,
-    "Alineación estratégica baja con la oferta de Grupo CEO": 519,
-    "No se confirmó una convocatoria o contratación": 368,
+    "Fecha límite no verificada": 525,
+    "Sin coincidencia clara con las líneas de servicio de Grupo CEO": 484,
+    "No se identifica con claridad un producto de consultoría": 441,
+    "Alineación estratégica baja con la oferta de Grupo CEO": 525,
+    "No se confirmó una convocatoria o contratación": 371,
     "Fuera del foco ALC/global: UZBEKISTAN": 7,
     "Contenido excluido: equipment": 23,
     "Fuera del foco ALC/global: MOZAMBIQUE": 6,
@@ -55,7 +55,7 @@
     "Contenido excluido: construction works": 1,
     "Fuera del foco ALC/global: SERBIA": 5,
     "Fuera del foco ALC/global: TUNISIA": 21,
-    "Alineación concentrada en: Diseño y gestión de proyectos": 13,
+    "Alineación concentrada en: Diseño y gestión de proyectos": 14,
     "Fuera del foco ALC/global: UKRAINE": 15,
     "Fuera del foco ALC/global: GAMBIA": 3,
     "Fuera del foco ALC/global: MADAGASCAR": 14,
@@ -63,7 +63,7 @@
     "Fuera del foco ALC/global: VIET NAM": 11,
     "Fuera del foco ALC/global: GHANA": 3,
     "Fuera del foco ALC/global: PHILIPPINES": 10,
-    "Alineación concentrada en: Mercados, comercio e inversiones": 5,
+    "Alineación concentrada en: Mercados, comercio e inversiones": 6,
     "Fuera del foco ALC/global: SPAIN": 2,
     "Fuera del foco ALC/global: KIRIBATI": 1,
     "Fuera del foco ALC/global: CONGO": 2,
@@ -80,7 +80,7 @@
     "Fuera del foco ALC/global: NIGER": 5,
     "Fuera del foco ALC/global: GUINEA": 5,
     "Fuera del foco ALC/global: MAURITIUS": 1,
-    "Alineación concentrada en: Políticas y estrategia institucional": 10,
+    "Alineación concentrada en: Políticas y estrategia institucional": 11,
     "Fuera del foco ALC/global: SYRIAN ARAB REPUBLIC": 7,
     "Fuera del foco ALC/global: GABON": 1,
     "Fuera del foco ALC/global: SRI LANKA": 4,
@@ -88,10 +88,10 @@
     "Fuera del foco ALC/global: SENEGAL": 7,
     "Fuera del foco ALC/global: MONGOLIA": 7,
     "Fuera del foco ALC/global: LESOTHO": 3,
-    "Fuera del foco ALC/global: MOLDOVA": 17,
+    "Fuera del foco ALC/global: MOLDOVA": 18,
     "Señales potencialmente fuera de alcance: cybersecurity": 1,
     "Fuera del foco ALC/global: PALESTINIAN TERRITORIES": 2,
-    "Fuera del foco ALC/global: NEPAL": 4,
+    "Fuera del foco ALC/global: NEPAL": 5,
     "Fuera del foco ALC/global: TAJIKISTAN": 3,
     "Señales potencialmente fuera de alcance: graphic design": 1,
     "Fuera del foco ALC/global: SOUTH SUDAN": 4,
@@ -113,7 +113,7 @@
     "Fuera del foco ALC/global: EGYPT": 2,
     "Fuera del foco ALC/global: DENMARK": 1,
     "Fuera del foco ALC/global: BURKINA FASO": 3,
-    "Fuera del foco ALC/global: PAPUA NEW GUINEA": 3,
+    "Fuera del foco ALC/global: PAPUA NEW GUINEA": 4,
     "Fuera del foco ALC/global: AFGHANISTAN": 7,
     "Fuera del foco ALC/global: IRAQ": 1,
     "Fuera del foco ALC/global: IRAN": 1,
@@ -126,7 +126,7 @@
     "Fuera del foco ALC/global: DJIBOUTI": 1,
     "Fuera del foco ALC/global: MOROCCO": 3,
     "Fuera del foco ALC/global: SOMALIA": 1,
-    "Fuera del foco ALC/global: INDIA": 5,
+    "Fuera del foco ALC/global: INDIA": 6,
     "Fuera del foco ALC/global: JORDAN": 4,
     "Fuera del foco ALC/global: MAURITANIA": 2,
     "Fuera del foco ALC/global: NAMIBIA": 1,
@@ -160,7 +160,8 @@
     "Contenido excluido: profile": 1,
     "Contenido excluido: webinar": 1,
     "País o alcance geográfico sin confirmar": 1,
-    "Fecha límite vencida": 17
+    "Fecha límite vencida": 17,
+    "Referencia oficial no identificada": 1
   },
   "creditos_tavily_estimados": 0
 }

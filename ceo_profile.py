@@ -101,6 +101,8 @@ CEO_TAVILY_SEARCH_GROUPS = [
         "queries": [
             "request for proposals consulting firm agricultural policy institutional strengthening bioeconomy Latin America Caribbean",
             "expression of interest agrifood strategy food security rural development governance Latin America consultancy",
+            "consultoría políticas agroalimentarias fortalecimiento institucional América Latina términos de referencia fecha límite",
+            "consultoria estrategia agroalimentar bioeconomia desenvolvimento rural América Latina edital",
         ],
     },
     {
@@ -109,6 +111,8 @@ CEO_TAVILY_SEARCH_GROUPS = [
         "queries": [
             "consulting services agricultural trade market intelligence regulatory analysis investment value chains Latin America",
             "terms of reference agribusiness econometric modelling trade negotiations market access feasibility study",
+            "consultoría comercio agrícola inteligencia de mercados cadenas de valor inversión América Latina",
+            "consultoria comércio agrícola acesso a mercados cadeias de valor América Latina",
         ],
     },
     {
@@ -117,6 +121,8 @@ CEO_TAVILY_SEARCH_GROUPS = [
         "queries": [
             "consulting firm project formulation monitoring evaluation agrifood bioeconomy Latin America Caribbean",
             "technical assistance project design financing implementation capacity building food systems consultancy",
+            "consultoría formulación evaluación monitoreo proyectos sistemas alimentarios América Latina",
+            "consultor individual gestão avaliação projetos desenvolvimento rural América Latina",
         ],
     },
     {
@@ -125,6 +131,8 @@ CEO_TAVILY_SEARCH_GROUPS = [
         "queries": [
             "consultancy bioeconomy science technology innovation agriculture Latin America terms of reference",
             "request for proposal digital agriculture technology transfer climate smart food systems Latin America",
+            "consultoría bioeconomía innovación ciencia tecnología agricultura América Latina convocatoria",
+            "consultoria bioeconomia inovação agricultura digital América Latina edital",
         ],
     },
     {
@@ -133,6 +141,18 @@ CEO_TAVILY_SEARCH_GROUPS = [
         "queries": [
             "consulting services agrifood policy rural development trade investment Latin America tender",
             "technical assistance bioeconomy innovation value chains project preparation Latin America Caribbean",
+            "asistencia técnica desarrollo rural bioeconomía América Latina licitación consultoría",
+            "technical expert agrifood rural development Latin America individual consultant deadline",
+        ],
+    },
+    {
+        "name": "Consultorías individuales",
+        "domains": ["undp.org", "ungm.org", "iadb.org", "worldbank.org", "ifad.org", "fao.org", "iica.int"],
+        "queries": [
+            "individual consultant agricultural policy food systems trade evaluation Latin America deadline",
+            "international consultant rural development bioeconomy project evaluation Caribbean terms of reference",
+            "consultor individual políticas públicas agricultura comercio evaluación América Latina convocatoria",
+            "consultor especialista desenvolvimento rural bioeconomia comércio agrícola América Latina edital",
         ],
     },
 ]

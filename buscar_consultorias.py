@@ -307,26 +307,30 @@ def scrape_tavily() -> List[Opportunity]:
                     max_results=8,
                     include_domains=group["domains"],
                     start_date=start_date,
-                    include_raw_content=False,
+                    include_raw_content=True,
                 )
             except Exception as exc:
                 log("Tavily {}: {}".format(group["name"], exc), "!")
                 continue
             for item in payload.get("results", []):
                 score = float(item.get("score", 0.0) or 0.0)
-                if score < 0.65:
+                # Tavily es una fuente de descubrimiento: un umbral moderado
+                # preserva recall y el motor local decide la pertinencia final.
+                if score < 0.45:
                     continue
                 url = str(item.get("url", "") or "").strip()
                 if not url or url in seen:
                     continue
                 seen.add(url)
                 title = str(item.get("title", "") or "").strip()
-                content = str(item.get("content", "") or "")
+                snippet = str(item.get("content", "") or "")
+                raw_content = str(item.get("raw_content", "") or "")
+                content = raw_content[:6000] or snippet
                 results.append(Opportunity(
                     title=title, organization=_organization_from_url(url), url=url,
                     source="Tavily – {}".format(group["name"]), source_mode="exploratory",
                     country="", deadline=_extract_date(content), reference=extract_reference(title + " " + content),
-                    notice_type="Exploratory web result", summary=content[:1200], raw_text=content,
+                    notice_type="Exploratory web result", summary=snippet[:1200], raw_text=content,
                     source_score=score,
                 ))
     return results
@@ -378,6 +382,7 @@ def process_candidates(candidates: List[Opportunity]) -> Dict[str, object]:
     staged_rows: List[Dict[str, str]] = []
     rejected = Counter()
     duplicates = 0
+    rejected_candidates = 0
     assessments = []
 
     combined = list(main_existing) + list(staging_existing)
@@ -396,6 +401,7 @@ def process_candidates(candidates: List[Opportunity]) -> Dict[str, object]:
             staged_rows.append(row)
             combined.append(row)
         else:
+            rejected_candidates += 1
             if assessment.reasons:
                 for reason in assessment.reasons:
                     rejected[reason] += 1
@@ -410,6 +416,7 @@ def process_candidates(candidates: List[Opportunity]) -> Dict[str, object]:
         "accepted_added": accepted_added,
         "staged_added": staged_added,
         "rejected": dict(rejected),
+        "rejected_candidates": rejected_candidates,
         "duplicates": duplicates,
         "assessments": assessments,
     }
@@ -464,7 +471,7 @@ def main() -> None:
     log("Tavily: {} registros exploratorios".format(len(tavily_results)), "✓" if tavily_results else "•")
 
     processed = process_candidates(all_candidates)
-    rejected_count = sum(processed["rejected"].values())
+    rejected_count = processed["rejected_candidates"]
     stats = {
         "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "version_motor": "2.0",
@@ -476,6 +483,7 @@ def main() -> None:
         "nuevas_revision": processed["staged_added"],
         "duplicadas": processed["duplicates"],
         "rechazadas": rejected_count,
+        "ocurrencias_motivos_rechazo": sum(processed["rejected"].values()),
         "total_csv": len(load_csv_rows(MAIN_PATH)),
         "total_revision_pendiente": sum(1 for r in load_csv_rows(STAGING_PATH) if r.get("Estado revisión", "Pendiente") == "Pendiente"),
         "por_fuente": source_stats,

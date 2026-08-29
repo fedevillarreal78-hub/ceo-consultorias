@@ -1447,14 +1447,14 @@ with st.sidebar:
         st.markdown(
             "<div style='font-size:0.75rem;padding:0.3rem 0.5rem;border-radius:6px;"
             "background:rgba(76,175,80,0.18);color:#81C784;margin-bottom:0.4rem;'>"
-            "✅ <b>Tavily activo</b> — búsqueda amplia (60 queries)</div>",
+            "✅ <b>Tavily activo</b> — búsqueda multifuente y revisión inteligente</div>",
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
             "<div style='font-size:0.75rem;padding:0.3rem 0.5rem;border-radius:6px;"
             "background:rgba(255,152,0,0.18);color:#FFB74D;margin-bottom:0.4rem;'>"
-            "⚠️ <b>Sin Tavily</b> — solo 5 scrapers HTML (resultados limitados)</div>",
+            "⚠️ <b>Sin Tavily</b> — solo fuentes directas (resultados limitados)</div>",
             unsafe_allow_html=True,
         )
 
@@ -1466,7 +1466,8 @@ with st.sidebar:
             st.markdown(
                 f"<div style='font-size:0.7rem;color:rgba(255,255,255,0.4);margin-bottom:0.3rem;'>"
                 f"Última búsqueda: {_st.get('fecha','?')} · "
-                f"{_st.get('nuevas',0)} nuevas de {_st.get('total_bruto',0)} encontradas</div>",
+                f"{int(_st.get('nuevas_pipeline', 0) or 0) + int(_st.get('nuevas_revision', 0) or 0)} "
+                f"nuevas de {_st.get('total_bruto',0)} encontradas</div>",
                 unsafe_allow_html=True,
             )
         except Exception:
@@ -1496,6 +1497,11 @@ with st.sidebar:
                     "oportunidades_consultoria.csv",
                     f"Auto-update CSV [{ts} UTC] — búsqueda manual",
                 )
+                staging_pushed = _push_file_to_github(
+                    Path(__file__).parent / "candidatos_revision.csv",
+                    "candidatos_revision.csv",
+                    f"Candidatos para revisión [{ts}]",
+                )
                 # También pushear stats JSON si existe
                 if _stats_path.exists():
                     _push_file_to_github(_stats_path, "ultima_busqueda_stats.json",
@@ -1504,15 +1510,25 @@ with st.sidebar:
                 # Mostrar resumen
                 try:
                     _st = json.load(open(_stats_path))
-                    _n  = _st.get("nuevas", 0)
+                    _pipeline = int(_st.get("nuevas_pipeline", 0) or 0)
+                    _revision = int(_st.get("nuevas_revision", 0) or 0)
+                    _n = _pipeline + _revision
                     _br = _st.get("total_bruto", 0)
+                    _dups = _st.get("duplicadas", 0)
+                    _rejects = _st.get("rechazadas", 0)
                     if _n > 0:
-                        st.success(f"✅ {_n} oportunidades nuevas agregadas (de {_br} encontradas).")
+                        st.success(
+                            f"✅ {_pipeline} al pipeline y {_revision} a revisión "
+                            f"(de {_br} encontradas; {_rejects} descartadas)."
+                        )
                     else:
-                        st.info(f"ℹ️ Búsqueda completa. {_br} resultados encontrados, todos ya estaban en el pipeline.")
+                        st.info(
+                            f"ℹ️ Búsqueda completa: {_br} encontradas, {_dups} duplicadas y "
+                            f"{_rejects} descartadas por falta de ajuste."
+                        )
                 except Exception:
                     st.success("✅ Búsqueda completada.")
-                if not pushed:
+                if not pushed or not staging_pushed:
                     st.warning("⚠️ No se pudo hacer push a GitHub (verificá GITHUB_TOKEN en Secrets).")
                 with st.expander("Ver log de búsqueda"):
                     st.code((result.stdout or "")[-3000:])

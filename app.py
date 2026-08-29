@@ -2091,8 +2091,6 @@ elif nav_page == "📊  Pipeline CEO":
 
 elif nav_page == "📥  Carga manual":
     st.markdown("**Editá Estado, Consultor, Monto y País directamente en la tabla.**")
-    if _is_cloud:
-        st.info("Versión en la nube: guardá los cambios y descargá el CSV para subirlo al repositorio.", icon="ℹ️")
 
     # ── Formulario de carga manual ────────────────────────────────────────────
     st.markdown(f'<div class="section-header" style="margin-bottom:0.8rem;">➕ Agregar consultoría manualmente</div>', unsafe_allow_html=True)

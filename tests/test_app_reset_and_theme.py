@@ -35,6 +35,10 @@ class AppResetAndThemeTests(unittest.TestCase):
         self.assertEqual(len(options), 4)
         self.assertNotIn("📋  Oportunidades", options)
 
+    def test_manual_load_does_not_reference_undefined_cloud_flag(self):
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        self.assertNotIn("_is_cloud", source)
+
 
 if __name__ == "__main__":
     unittest.main()

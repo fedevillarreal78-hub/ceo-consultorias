@@ -295,6 +295,9 @@ def scrape_tavily() -> List[Opportunity]:
         log("tavily-python no instalado", "!")
         return []
     client = TavilyClient(api_key=api_key)
+    search_depth = os.environ.get("TAVILY_SEARCH_DEPTH", "advanced").strip().lower()
+    if search_depth not in {"basic", "advanced"}:
+        search_depth = "advanced"
     results: List[Opportunity] = []
     seen = set()
     start_date = (date.today() - timedelta(days=45)).isoformat()
@@ -303,8 +306,8 @@ def scrape_tavily() -> List[Opportunity]:
             try:
                 payload = client.search(
                     query=query,
-                    search_depth="basic",
-                    max_results=8,
+                    search_depth=search_depth,
+                    max_results=10,
                     include_domains=group["domains"],
                     start_date=start_date,
                     include_raw_content=True,
@@ -345,6 +348,13 @@ def _organization_from_url(url: str) -> str:
         "expertisefrance.fr": "Expertise France", "afd.fr": "AFD", "ted.europa.eu": "Unión Europea/TED",
         "ungm.org": "UNGM", "ifad.org": "FIDA/IFAD", "wfp.org": "PMA/WFP",
         "ilo.org": "OIT/ILO", "devex.com": "Devex",
+        "cepal.org": "CEPAL", "greenclimate.fund": "Fondo Verde para el Clima",
+        "thegef.org": "GEF", "adaptation-fund.org": "Fondo de Adaptación",
+        "idrc-crdi.ca": "IDRC", "fundacionavina.org": "Fundación Avina",
+        "rockefellerfoundation.org": "Rockefeller Foundation", "wbcsd.org": "WBCSD",
+        "solidaridadnetwork.org": "Solidaridad Network", "rainforest-alliance.org": "Rainforest Alliance",
+        "conservation.org": "Conservation International", "procisur.org.uy": "PROCISUR",
+        "foragro.org": "FORAGRO",
     }
     low = url.lower()
     for domain, name in mapping.items():
@@ -357,6 +367,7 @@ def _extract_date(text: str) -> str:
     patterns = [
         r"\b(20\d{2}-\d{2}-\d{2})\b",
         r"\b(\d{1,2}[- ](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[- ,]20\d{2})\b",
+        r"\b(\d{1,2}/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*/20\d{2})\b",
         r"\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}, 20\d{2})\b",
     ]
     for pattern in patterns:
@@ -489,7 +500,11 @@ def main() -> None:
         "por_fuente": source_stats,
         "errores_fuente": source_errors,
         "motivos_rechazo": processed["rejected"],
-        "creditos_tavily_estimados": sum(len(g["queries"]) for g in TAVILY_SEARCH_GROUPS) if os.environ.get("TAVILY_API_KEY") else 0,
+        "creditos_tavily_estimados": (
+            sum(len(g["queries"]) for g in TAVILY_SEARCH_GROUPS)
+            * (2 if os.environ.get("TAVILY_SEARCH_DEPTH", "advanced").strip().lower() == "advanced" else 1)
+            if os.environ.get("TAVILY_API_KEY") else 0
+        ),
     }
     STATS_PATH.write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
     write_report(stats, processed["accepted_rows"], processed["staged_rows"])

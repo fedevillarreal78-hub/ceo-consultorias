@@ -1,8 +1,10 @@
 {
-  "fecha": "2026-10-05 21:24",
+  "fecha": "2026-10-08 19:45",
   "aplicada": false,
-  "total": 0,
-  "decisiones": {},
-  "conservadas": 0,
+  "total": 2,
+  "decisiones": {
+    "reject": 2
+  },
+  "conservadas": 2,
   "archivadas": 0
 }

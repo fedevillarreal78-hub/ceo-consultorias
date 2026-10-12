@@ -1,48 +1,48 @@
 {
-  "fecha": "2026-10-12 22:00",
+  "fecha": "2026-10-12 22:04",
   "version_motor": "2.0",
   "tavily_activo": true,
   "ungm_token_configurado": false,
   "lookback_days": 21,
-  "total_bruto": 545,
+  "total_bruto": 548,
   "nuevas_pipeline": 0,
-  "nuevas_revision": 0,
+  "nuevas_revision": 1,
   "duplicadas": 3,
-  "rechazadas": 542,
-  "ocurrencias_motivos_rechazo": 3198,
+  "rechazadas": 544,
+  "ocurrencias_motivos_rechazo": 3211,
   "total_csv": 2,
-  "total_revision_pendiente": 5,
+  "total_revision_pendiente": 4,
   "por_fuente": {
     "UNDP": {
-      "brutas": 522,
-      "segundos": 3.46
+      "brutas": 523,
+      "segundos": 3.23
     },
     "World Bank": {
       "brutas": 17,
-      "segundos": 9.32
+      "segundos": 9.19
     },
     "ReliefWeb": {
       "brutas": 0,
-      "segundos": 0.41
+      "segundos": 0.33
     },
     "FAO": {
       "brutas": 2,
-      "segundos": 1.67
+      "segundos": 0.27
     },
     "Tavily": {
-      "brutas": 4,
-      "segundos": 133.54
+      "brutas": 6,
+      "segundos": 91.88
     }
   },
   "errores_fuente": {},
   "motivos_rechazo": {
-    "Sin contexto agroalimentario suficiente": 472,
-    "No se confirmó una convocatoria o contratación": 339,
+    "Sin contexto agroalimentario suficiente": 473,
+    "No se confirmó una convocatoria o contratación": 341,
     "Fuera del foco ALC/global: MOROCCO": 6,
-    "Fecha límite no verificada": 477,
-    "Sin coincidencia clara con las líneas de servicio de Grupo CEO": 448,
-    "No se identifica con claridad un producto de consultoría": 408,
-    "Alineación estratégica baja con la oferta de Grupo CEO": 474,
+    "Fecha límite no verificada": 479,
+    "Sin coincidencia clara con las líneas de servicio de Grupo CEO": 449,
+    "No se identifica con claridad un producto de consultoría": 411,
+    "Alineación estratégica baja con la oferta de Grupo CEO": 475,
     "Fuera del foco ALC/global: MAURITIUS": 1,
     "Fuera del foco ALC/global: MONGOLIA": 14,
     "Señal contractual débil": 87,
@@ -56,6 +56,7 @@
     "Fuera del foco ALC/global: INDONESIA": 7,
     "Alineación concentrada en: Diseño y gestión de proyectos": 8,
     "Fuera del foco ALC/global: VIET NAM": 12,
+    "Fuera del foco ALC/global: SAMOA": 3,
     "Fuera del foco ALC/global: PAKISTAN": 9,
     "Fuera del foco ALC/global: INDIA": 5,
     "Fuera del foco ALC/global: MAURITANIA": 1,
@@ -68,7 +69,7 @@
     "Fuera del foco ALC/global: CENTRAL AFRICAN REPUBLIC": 7,
     "Fuera del foco ALC/global: CAMEROON": 2,
     "Fuera del foco ALC/global: UGANDA": 3,
-    "Fuera del foco ALC/global: TUNISIA": 6,
+    "Fuera del foco ALC/global: TUNISIA": 5,
     "Fuera del foco ALC/global: MALDIVES": 3,
     "Fuera del foco ALC/global: SUDAN": 1,
     "Fuera del foco ALC/global: DJIBOUTI": 6,
@@ -138,7 +139,6 @@
     "Contenido excluido: translation services": 1,
     "Fuera del foco ALC/global: COMOROS": 1,
     "Fuera del foco ALC/global: SENEGAL": 3,
-    "Fuera del foco ALC/global: SAMOA": 2,
     "Fuera del foco ALC/global: SPAIN": 1,
     "Señales potencialmente fuera de alcance: audit services": 1,
     "Señales potencialmente fuera de alcance: human resources": 1,
@@ -163,8 +163,8 @@
     "Contenido excluido: webinar": 1,
     "País o alcance geográfico sin confirmar": 1,
     "Fecha límite vencida": 17,
-    "Fuente exploratoria: requiere revisión humana": 3,
-    "Referencia oficial no identificada": 1,
+    "Fuente exploratoria: requiere revisión humana": 4,
+    "Referencia oficial no identificada": 3,
     "URL editorial/no contractual: /news/": 1,
     "Plazo de postulación muy corto": 1,
     "Señales potencialmente fuera de alcance: telecommunications": 1

@@ -237,6 +237,13 @@ def parse_date(value: str) -> Optional[date]:
             return datetime.strptime(value[:30].strip(), fmt).date()
         except ValueError:
             continue
+    # Formato del PNUD: "29-Nov-26 06:30 AM (New York time)".
+    m = re.match(r"\s*(\d{1,2}-[A-Za-z]{3}-\d{2})(?!\d)", value)
+    if m:
+        try:
+            return datetime.strptime(m.group(1), "%d-%b-%y").date()
+        except ValueError:
+            pass
     m = re.search(r"(20\d{2})-(\d{2})-(\d{2})", value)
     if m:
         try:

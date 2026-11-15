@@ -124,13 +124,30 @@ def extract_reference(text: str) -> str:
     return ""
 
 
-def scrape_undp(session: requests.Session) -> List[Opportunity]:
-    url = "https://procurement-notices.undp.org"
-    response = safe_get(session, url)
-    soup = BeautifulSoup(response.text, "lxml")
+UNDP_CONSULTING_PROCESSES = ("rfp", "request for proposal", "ic -", "individual contractor",
+                             "eoi", "expression of interest", "rfi", "request for information")
+UNDP_CONSULTING_HINTS = ("consult", "assessment", "evaluation", "evaluación", "evaluacion", "estudio",
+                         "diagnóstico", "diagnostico", "estrategia", "strategy", "asistencia técnica",
+                         "technical assistance", "servicios profesionales", "terms of reference")
+UNDP_KEEP_REGIONS = {"region_RLA", "region_", ""}
+
+
+def _undp_is_consulting(process: str, title: str) -> bool:
+    """Descarta compras de bienes y obras (RFQ/ITB) salvo que el título sea de consultoría."""
+    proc = (process or "").lower()
+    if any(term in proc for term in UNDP_CONSULTING_PROCESSES):
+        return True
+    low = (title or "").lower()
+    return any(term in low for term in UNDP_CONSULTING_HINTS)
+
+
+def parse_undp_html(html: str, url: str = "https://procurement-notices.undp.org") -> List[Opportunity]:
+    soup = BeautifulSoup(html, "lxml")
     rows = soup.select("a.vacanciesTableLink[data-region]")
     results: List[Opportunity] = []
     for row in rows:
+        if row.get("data-region", "") not in UNDP_KEEP_REGIONS:
+            continue
         data: Dict[str, str] = {}
         for cell in row.select(".vacanciesTable__cell"):
             label = cell.select_one(".vacanciesTable__cell__label")
@@ -140,9 +157,11 @@ def scrape_undp(session: requests.Session) -> List[Opportunity]:
         title = data.get("title", "").strip()
         if not title:
             continue
+        process = (data.get("process") or data.get("procurement process") or "").strip()
+        if not _undp_is_consulting(process, title):
+            continue
         country_raw = data.get("undp office/country", "").strip()
         reference = data.get("ref no", "").strip() or extract_reference(title)
-        process = data.get("procurement process", "").strip()
         href = row.get("href", "")
         link = urljoin(url + "/", href)
         country_code = ""
@@ -160,6 +179,7 @@ def scrape_undp(session: requests.Session) -> List[Opportunity]:
             country=country_name,
             country_code=country_code,
             deadline=data.get("deadline", ""),
+            publication_date=data.get("posted", ""),
             reference=reference,
             notice_type=process,
             summary=process,
@@ -168,39 +188,55 @@ def scrape_undp(session: requests.Session) -> List[Opportunity]:
     return results
 
 
+def scrape_undp(session: requests.Session) -> List[Opportunity]:
+    url = "https://procurement-notices.undp.org"
+    return parse_undp_html(safe_get(session, url).text, url)
+
+
 def scrape_reliefweb(session: requests.Session) -> List[Opportunity]:
-    base = "https://reliefweb.int"
-    urls = [
-        base + "/jobs?advanced-search=%28TY264%29&list=Consultancy+Jobs",
-        base + "/jobs?advanced-search=%28TY264%29_%28S1268%29&list=Consultancy+Jobs",
-    ]
-    seen = set()
+    """API oficial de ReliefWeb (v2). El sitio web bloquea la lectura automática del HTML.
+
+    Requiere un appname aprobado por ReliefWeb en el secret RELIEFWEB_APPNAME
+    (solicitud gratuita en https://apidoc.reliefweb.int/parameters#appname).
+    """
+    appname = os.environ.get("RELIEFWEB_APPNAME", "").strip()
+    if not appname:
+        log("ReliefWeb: falta RELIEFWEB_APPNAME; fuente omitida", "•")
+        return []
+    since = (date.today() - timedelta(days=LOOKBACK_DAYS)).strftime("%Y-%m-%dT00:00:00+00:00")
+    body = {
+        "limit": 200,
+        "profile": "full",
+        "sort": ["date.created:desc"],
+        "filter": {"operator": "AND", "conditions": [
+            {"field": "type.id", "value": 264},  # Consultancy
+            {"field": "date.created", "value": {"from": since}},
+            {"operator": "OR", "conditions": [
+                {"field": "theme.name", "value": "Agriculture"},
+                {"field": "theme.name", "value": "Food and Nutrition"},
+                {"field": "career_categories.name", "value": "Program/Project Management"},
+                {"field": "career_categories.name", "value": "Monitoring and Evaluation"},
+            ]},
+        ]},
+    }
+    response = session.post("https://api.reliefweb.int/v2/jobs", params={"appname": appname},
+                            json=body, timeout=REQUEST_TIMEOUT)
+    response.raise_for_status()
     results: List[Opportunity] = []
-    for url in urls:
-        soup = BeautifulSoup(safe_get(session, url).text, "lxml")
-        for article in soup.select("article.rw-river-article--job"):
-            anchor = article.select_one("h3.rw-river-article__title a")
-            if not anchor:
-                continue
-            title = anchor.get_text(" ", strip=True)
-            link = urljoin(base, anchor.get("href", ""))
-            if link in seen:
-                continue
-            seen.add(link)
-            org_el = article.select_one("dd.rw-entity-meta__tag-value--source a, dd.rw-entity-meta__tag-value--source span")
-            org = org_el.get_text(" ", strip=True) if org_el else "ReliefWeb"
-            country_el = article.select_one("dd.rw-entity-meta__tag-value--country a, dd.rw-entity-meta__tag-value--country span")
-            country = country_el.get_text(" ", strip=True) if country_el else ""
-            times = article.select("time")
-            deadline = ""
-            if len(times) >= 2:
-                deadline = times[1].get("datetime", "")[:10] or times[1].get_text(" ", strip=True)
-            results.append(Opportunity(
-                title=title, organization=org, url=link, source="ReliefWeb",
-                source_mode="direct", country=country, deadline=deadline,
-                reference=extract_reference(title), notice_type="Consultancy",
-                summary=article.get_text(" ", strip=True)[:1200], raw_text=article.get_text(" ", strip=True),
-            ))
+    for item in response.json().get("data", []):
+        f = item.get("fields", {})
+        countries = [c.get("name", "") for c in f.get("country", []) if c.get("name")]
+        sources = [s_.get("name", "") for s_ in f.get("source", []) if s_.get("name")]
+        body_text = re.sub(r"<[^>]+>", " ", str(f.get("body", "") or ""))
+        deadline = str((f.get("date") or {}).get("closing", "") or "")[:10]
+        title = str(f.get("title", "") or "").strip()
+        results.append(Opportunity(
+            title=title, organization=sources[0] if sources else "ReliefWeb",
+            url=str(f.get("url_alias") or f.get("url") or ""), source="ReliefWeb",
+            source_mode="direct", country=countries[0] if len(countries) == 1 else ("Regional/Global" if countries else ""),
+            deadline=deadline, reference=extract_reference(title), notice_type="Consultancy",
+            summary=body_text[:1200], raw_text="{} {} {}".format(title, " ".join(countries), body_text[:2500]),
+        ))
     return results
 
 
@@ -235,53 +271,63 @@ def scrape_fao(session: requests.Session) -> List[Opportunity]:
     return results
 
 
+WB_SEARCH_URL = "https://search.worldbank.org/api/v2/procnotices"
+WB_EXCLUDED_NOTICES = ("contract award", "general procurement notice")
+
+
+def parse_world_bank_notice(item: Dict[str, object]) -> Optional[Opportunity]:
+    notice = str(item.get("notice_type", "") or "")
+    if any(term in notice.lower() for term in WB_EXCLUDED_NOTICES):
+        return None
+    title = str(item.get("bid_description", "") or "").strip()
+    if not title:
+        return None
+    country = str(item.get("project_ctry_name", "") or "").strip()
+    item_id = str(item.get("id", "") or "").strip()
+    url = str(item.get("url", "") or "").strip() or (
+        "https://projects.worldbank.org/en/projects-operations/procurement-detail/{}".format(item_id) if item_id else ""
+    )
+    project = str(item.get("project_name", "") or "")
+    deadline = str(item.get("submission_deadline_date", "") or "")[:10]
+    return Opportunity(
+        title=title, organization="Banco Mundial", url=url, source="World Bank", source_mode="direct",
+        country=country, deadline=deadline,
+        publication_date=str(item.get("submission_date", "") or "")[:10],
+        reference=item_id or str(item.get("project_id", "") or ""),
+        notice_type="{} – Consulting Services – {}".format(notice, item.get("procurement_method_name", "")),
+        summary="Proyecto {} ({}). {}".format(item.get("project_id", ""), project, notice),
+        raw_text=json.dumps(item, ensure_ascii=False),
+    )
+
+
 def scrape_world_bank(session: requests.Session) -> List[Opportunity]:
-    """Consulta la API oficial DS00979 por fecha de publicación reciente."""
-    base = "https://datacatalogapi.worldbank.org/dexapps/fone/api/apiservice"
+    """API de búsqueda de avisos del Banco Mundial, ordenada por fecha, solo servicios de consultoría en ALC.
+
+    La API anterior (DS00979) ignoraba el filtro de fecha y devolvía avisos de 2005–2008.
+    """
+    cutoff = (date.today() - timedelta(days=LOOKBACK_DAYS)).isoformat()
+    fields = ("id,bid_description,project_ctry_name,project_id,project_name,submission_date,"
+              "submission_deadline_date,notice_type,procurement_method_name,url")
     results: List[Opportunity] = []
     seen = set()
-    for offset in range(LOOKBACK_DAYS + 1):
-        target = date.today() - timedelta(days=offset)
-        params = {
-            "datasetId": "DS00979", "resourceId": "RS00909", "type": "json",
-            "top": 1000, "publication_date": target.strftime("%d-%b-%Y"),
-        }
+    for country in ALC_WB_COUNTRIES:
+        params = {"format": "json", "rows": 50, "srt": "submission_date", "order": "desc",
+                  "procurement_group": "CS", "project_ctry_name": country, "fl": fields}
         try:
-            payload = safe_get(session, base, params=params).json()
+            payload = safe_get(session, WB_SEARCH_URL, params=params).json()
         except Exception as exc:
-            log("World Bank {}: {}".format(target.isoformat(), exc), "!")
+            log("World Bank {}: {}".format(country, exc), "!")
             continue
-        for item in payload.get("data", []) if isinstance(payload, dict) else []:
-            url = str(item.get("url", "") or "").strip()
-            item_id = str(item.get("id", "") or "").strip()
-            unique = item_id or url
-            if not unique or unique in seen:
+        for item in payload.get("procnotices", []) if isinstance(payload, dict) else []:
+            if str(item.get("submission_date", ""))[:10] < cutoff:
                 continue
-            seen.add(unique)
-            country = str(item.get("country_name", "") or "").strip()
-            category = str(item.get("procurement_category", "") or "")
-            method = str(item.get("procurement_method", "") or "")
-            notice = str(item.get("notice_type", "") or "")
-            # Reducir volumen antes de la evaluación completa.
-            prefilter = "{} {}".format(category, method).lower()
-            if "consult" not in prefilter and "consult" not in notice.lower():
+            item_id = str(item.get("id", "") or "")
+            if item_id in seen:
                 continue
-            if country and country not in ALC_WB_COUNTRIES:
-                continue
-            title = str(item.get("bid_description", "") or "").strip()
-            if not title:
-                continue
-            reference = item_id or str(item.get("project_id", "") or "")
-            results.append(Opportunity(
-                title=title, organization="Banco Mundial", url=url,
-                source="World Bank", source_mode="direct", country=country,
-                region=str(item.get("region", "") or ""),
-                deadline=str(item.get("deadline_date", "") or ""),
-                publication_date=str(item.get("publication_date", "") or ""),
-                reference=reference, notice_type="{} {} {}".format(notice, category, method),
-                summary="Proyecto {}. Sector {}.".format(item.get("project_id", ""), item.get("sector", "")),
-                raw_text=json.dumps(item, ensure_ascii=False),
-            ))
+            seen.add(item_id)
+            opp = parse_world_bank_notice(item)
+            if opp:
+                results.append(opp)
     return results
 
 
@@ -355,6 +401,12 @@ def _organization_from_url(url: str) -> str:
         "solidaridadnetwork.org": "Solidaridad Network", "rainforest-alliance.org": "Rainforest Alliance",
         "conservation.org": "Conservation International", "procisur.org.uy": "PROCISUR",
         "foragro.org": "FORAGRO",
+        "magyp.gob.ar": "SAGyP", "argentina.gob.ar": "Gobierno de Argentina", "salta.gob.ar": "Gobierno de Salta",
+        "rionegro.gov.ar": "Gobierno de Río Negro", "cba.gov.ar": "Gobierno de Córdoba",
+        "santafe.gov.ar": "Gobierno de Santa Fe", "mendoza.gov.ar": "Gobierno de Mendoza",
+        "entrerios.gov.ar": "Gobierno de Entre Ríos", "gba.gob.ar": "Provincia de Buenos Aires",
+        "cfi.org.ar": "CFI", "gub.uy": "Gobierno de Uruguay", "mag.gov.py": "MAG Paraguay",
+        "alinvest-verde.eu": "AL-INVEST Verde", "vidasilvestre.org.ar": "Fundación Vida Silvestre",
     }
     low = url.lower()
     for domain, name in mapping.items():

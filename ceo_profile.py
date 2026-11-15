@@ -105,6 +105,29 @@ OUT_OF_SCOPE_TERMS: Sequence[str] = (
 
 CEO_TAVILY_SEARCH_GROUPS = [
     {
+        "name": "Argentina y Cono Sur: préstamos BID/BM y unidades ejecutoras",
+        "domains": ["argentina.gob.ar", "magyp.gob.ar", "salta.gob.ar", "rionegro.gov.ar", "cba.gov.ar",
+                    "santafe.gov.ar", "mendoza.gov.ar", "entrerios.gov.ar", "gba.gob.ar", "cfi.org.ar",
+                    "gub.uy", "mag.gov.py"],
+        "queries": [
+            "solicitud de expresiones de interés firma consultora préstamo BID agroindustria",
+            "llamado a expresión de interés consultoría programa desarrollo productivo rural préstamo BID Banco Mundial",
+            "pedido de propuestas firma consultora DIPROSE PROSAP estudio diagnóstico estrategia",
+            "convocatoria consultoría individual unidad ejecutora provincial programa agroalimentario",
+        ],
+    },
+    {
+        "name": "EUDR, trazabilidad e inteligencia comercial",
+        "domains": ["iadb.org", "worldbank.org", "fao.org", "iica.int", "ted.europa.eu", "europa.eu",
+                    "alinvest-verde.eu", "giz.de", "solidaridadnetwork.org", "tnc.org", "wwf.org.ar", "vidasilvestre.org.ar"],
+        "queries": [
+            "consultoría trazabilidad libre de deforestación EUDR soja carne Argentina términos de referencia",
+            "consultancy deforestation-free supply chains traceability EUDR Argentina Paraguay terms of reference",
+            "consultoría inteligencia comercial agroalimentaria acceso a mercados exportaciones convocatoria",
+            "request for proposals market intelligence agrifood exports Latin America consulting firm",
+        ],
+    },
+    {
         "name": "Políticas y estrategia agroalimentaria",
         "domains": ["iadb.org", "caf.com", "bcie.org", "iica.int", "fontagro.org", "worldbank.org"],
         "queries": [

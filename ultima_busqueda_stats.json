@@ -1,25 +1,25 @@
 {
-  "fecha": "2026-11-23 12:23",
+  "fecha": "2026-11-24 01:31",
   "version_motor": "2.0",
   "tavily_activo": true,
   "ungm_token_configurado": false,
   "lookback_days": 21,
-  "total_bruto": 69,
+  "total_bruto": 94,
   "nuevas_pipeline": 0,
   "nuevas_revision": 0,
-  "duplicadas": 4,
-  "rechazadas": 65,
-  "ocurrencias_motivos_rechazo": 215,
+  "duplicadas": 6,
+  "rechazadas": 88,
+  "ocurrencias_motivos_rechazo": 274,
   "total_csv": 2,
   "total_revision_pendiente": 7,
   "por_fuente": {
     "UNDP": {
-      "brutas": 40,
-      "segundos": 3.48
+      "brutas": 38,
+      "segundos": 2.43
     },
     "World Bank": {
       "brutas": 27,
-      "segundos": 7.14
+      "segundos": 3.24
     },
     "ReliefWeb": {
       "brutas": 0,
@@ -27,26 +27,34 @@
     },
     "FAO": {
       "brutas": 2,
-      "segundos": 0.22
+      "segundos": 0.98
     },
     "Tavily": {
-      "brutas": 0,
-      "segundos": 7.22
+      "brutas": 27,
+      "segundos": 192.17
     }
   },
   "errores_fuente": {},
   "motivos_rechazo": {
-    "Sin contexto agroalimentario suficiente": 63,
-    "Sin coincidencia clara con las líneas de servicio de Grupo CEO": 44,
-    "Alineación estratégica baja con la oferta de Grupo CEO": 46,
+    "Sin contexto agroalimentario suficiente": 62,
+    "Sin coincidencia clara con las líneas de servicio de Grupo CEO": 46,
+    "Alineación estratégica baja con la oferta de Grupo CEO": 47,
     "Señal contractual débil": 2,
-    "No se identifica con claridad un producto de consultoría": 8,
-    "No se confirmó una convocatoria o contratación": 7,
-    "Plazo de postulación muy corto": 23,
+    "No se identifica con claridad un producto de consultoría": 13,
+    "No se confirmó una convocatoria o contratación": 18,
+    "Plazo de postulación muy corto": 14,
     "Alineación concentrada en: Diseño y gestión de proyectos": 1,
-    "País o alcance geográfico sin confirmar": 1,
-    "Fecha límite vencida": 19,
-    "Alineación concentrada en: Bioeconomía, CTI e innovación": 1
+    "País o alcance geográfico sin confirmar": 2,
+    "Fecha límite vencida": 20,
+    "Fecha límite no verificada": 13,
+    "Fuente exploratoria: requiere revisión humana": 13,
+    "Referencia oficial no identificada": 11,
+    "URL editorial/no contractual: /news/": 3,
+    "URL editorial/no contractual: /blog/": 2,
+    "Contenido excluido: vehicles": 1,
+    "URL editorial/no contractual: openknowledge.fao.org": 2,
+    "Contenido excluido: equipment": 1,
+    "Contenido excluido: newsletter": 3
   },
   "creditos_tavily_estimados": 88
 }
